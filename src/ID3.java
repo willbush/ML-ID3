@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Program {
+public class ID3 {
     private static final String WHITE_SPACE_REGEX = "\\s+";
 
     public static void main(String[] args) {
@@ -43,7 +43,7 @@ public class Program {
         String usage = "The program requires two arguments that specify the path" +
                 " to the training and test data.\n" +
                 "For example:\n" +
-                "java Program \"/dataSet/train.dat\" \"/dataSet/test.dat\"";
+                "java ID3 \"/dataSet/train.dat\" \"/dataSet/test.dat\"";
         System.out.println(usage);
     }
 
