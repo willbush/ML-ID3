@@ -1,3 +1,4 @@
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.LinkedList;
@@ -6,6 +7,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class ID3Test {
+    private static List<Boolean[]> spamSet;
     private static final String SPAM_EXAMPLE = "1 0 0 1\n" +
             "0 0 1 1\n" +
             "0 0 0 0\n" +
@@ -13,7 +15,14 @@ public class ID3Test {
             "0 0 0 0\n" +
             "1 0 1 1\n" +
             "0 1 1 0\n" +
+            "1 0 0 1\n" +
+            "0 0 0 0\n" +
             "1 0 0 1\n";
+
+    @BeforeClass
+    public static void setupClass() {
+        spamSet = convertToSet(SPAM_EXAMPLE);
+    }
 
     @Test
     public void canCorrectlyParseFileWithExtraWhiteSpace() {
@@ -31,7 +40,7 @@ public class ID3Test {
 
     @Test
     public void canGetWhatWasGiven() {
-        assertEquals(SPAM_EXAMPLE, ID3.convertSetToString(setFromString(SPAM_EXAMPLE)));
+        assertEquals(SPAM_EXAMPLE, ID3.convertSetToString(spamSet));
     }
 
     @Test
@@ -47,11 +56,27 @@ public class ID3Test {
     }
 
     @Test
-    public void canCalculateInformationGain() {
-        assertEquals(0.0, ID3.calcInfoGain(setFromString(SPAM_EXAMPLE)), 0.001);
+    public void canCalculateConditionalEntropy() {
+        double[] conditionalEntropies = ID3.calcConditionalEntropies(spamSet);
+        assertEquals(0.7219, conditionalEntropies[0], 0.0001);
+        assertEquals(0.7635, conditionalEntropies[1], 0.0001);
+        assertEquals(0.9651, conditionalEntropies[2], 0.0001);
     }
 
-    private List<Boolean[]> setFromString(String setData) {
+    @Test
+    public void canCalculateInformationGain() {
+        double[] infoGains = ID3.calcInfoGain(spamSet);
+        assertEquals(0.28, infoGains[0], 0.01);
+        assertEquals(0.24, infoGains[1], 0.01);
+        assertEquals(0.035, infoGains[2], 0.01);
+    }
+
+    @Test
+    public void canDetermineIndexOfSplit() {
+        assertEquals(0, ID3.determineIndexOfSplit(spamSet));
+    }
+
+    private static List<Boolean[]> convertToSet(String setData) {
         final String whitespaceRegex = "\\s+";
         List<Boolean[]> result = new LinkedList<>();
         String[] lines = setData.split("\\n");

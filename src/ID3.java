@@ -77,6 +77,75 @@ public class ID3 {
         }
     }
 
+    public static int determineIndexOfSplit(List<Boolean[]> spamSet) {
+        double[] infoGains = calcInfoGain(spamSet);
+        int splitIndex = 0;
+
+        double previous = 0;
+        for (int i = 0; i < infoGains.length; ++i) {
+            if (infoGains[i] > previous) {
+                splitIndex = i;
+                previous = infoGains[i];
+            }
+        }
+        return splitIndex;
+    }
+
+    static double[] calcInfoGain(List<Boolean[]> set) {
+        double[] conditionalEntropies = calcConditionalEntropies(set);
+        double setEntropy = calcEntropy(set);
+        double[] infoGains = new double[conditionalEntropies.length];
+
+        for (int i = 0; i < infoGains.length; ++i)
+            infoGains[i] = setEntropy - conditionalEntropies[i];
+
+        return infoGains;
+    }
+
+    static double[] calcConditionalEntropies(List<Boolean[]> set) {
+        final int classIndex = set.get(0).length - 1;
+        final int attributeLen = classIndex;
+        int[] classTrueCountOnTrueBranch = new int[attributeLen];
+        int[] classFalseCountOnTrueBranch = new int[attributeLen];
+        int[] classTrueCountOnFalseBranch = new int[attributeLen];
+        int[] classFalseCountOnFalseBranch = new int[attributeLen];
+
+        for (Boolean[] booleans : set) {
+            for (int i = 0; i < attributeLen; ++i) {
+                if (booleans[i] && booleans[classIndex])
+                    classTrueCountOnTrueBranch[i] += 1;
+                else if (booleans[i] && !booleans[classIndex])
+                    classFalseCountOnTrueBranch[i] += 1;
+                else if (!booleans[i] && booleans[classIndex])
+                    classTrueCountOnFalseBranch[i] += 1;
+                else if (!booleans[i] && !booleans[classIndex])
+                    classFalseCountOnFalseBranch[i] += 1;
+            }
+        }
+        double[] conditionalEntropies = new double[attributeLen];
+
+        for (int i = 0; i < attributeLen; ++i) {
+            conditionalEntropies[i] = getWeightedAverage(set.size(), classTrueCountOnFalseBranch[i], classFalseCountOnFalseBranch[i])
+                    + getWeightedAverage(set.size(), classTrueCountOnTrueBranch[i], classFalseCountOnTrueBranch[i]);
+        }
+        return conditionalEntropies;
+    }
+
+    private static double getWeightedAverage(double setSize, int trueCount, int falseCount) {
+        return ((trueCount + falseCount) / setSize) * calcEntropy(trueCount, falseCount);
+    }
+
+    private static double calcEntropy(List<Boolean[]> set) {
+        final int classIndex = set.get(0).length - 1;
+        int trueCount = 0;
+
+        for (Boolean[] booleans : set)
+            if (booleans[classIndex])
+                trueCount += 1;
+
+        return calcEntropy(trueCount, set.size() - trueCount);
+    }
+
     static double calcEntropy(int classACount, int classBCount) {
         final int setTotalCount = classACount + classBCount;
         final double probabilityA = (double) classACount / setTotalCount;
@@ -90,9 +159,5 @@ public class ID3 {
 
     private static double log2(double d) {
         return Math.log(d) / Math.log(2);
-    }
-
-    static double calcInfoGain(List<Boolean[]> set) {
-        return 0;
     }
 }
