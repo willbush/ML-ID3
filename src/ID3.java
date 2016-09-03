@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -77,7 +78,7 @@ public class ID3 {
         }
     }
 
-    public static int determineIndexOfSplit(List<Boolean[]> spamSet) {
+    public int determineIndexOfSplit(List<Boolean[]> spamSet) {
         double[] infoGains = calcInfoGain(spamSet);
         int splitIndex = 0;
 
@@ -91,7 +92,7 @@ public class ID3 {
         return splitIndex;
     }
 
-    static double[] calcInfoGain(List<Boolean[]> set) {
+    double[] calcInfoGain(List<Boolean[]> set) {
         double[] conditionalEntropies = calcConditionalEntropies(set);
         double setEntropy = calcEntropy(set);
         double[] infoGains = new double[conditionalEntropies.length];
@@ -102,7 +103,7 @@ public class ID3 {
         return infoGains;
     }
 
-    static double[] calcConditionalEntropies(List<Boolean[]> set) {
+    double[] calcConditionalEntropies(List<Boolean[]> set) {
         final int classIndex = set.get(0).length - 1;
         final int attributeLen = classIndex;
         int[] classTrueCountOnTrueBranch = new int[attributeLen];
@@ -131,11 +132,11 @@ public class ID3 {
         return conditionalEntropies;
     }
 
-    private static double getWeightedAverage(double setSize, int trueCount, int falseCount) {
+    private double getWeightedAverage(double setSize, int trueCount, int falseCount) {
         return ((trueCount + falseCount) / setSize) * calcEntropy(trueCount, falseCount);
     }
 
-    private static double calcEntropy(List<Boolean[]> set) {
+    private double calcEntropy(List<Boolean[]> set) {
         final int classIndex = set.get(0).length - 1;
         int trueCount = 0;
 
@@ -146,7 +147,7 @@ public class ID3 {
         return calcEntropy(trueCount, set.size() - trueCount);
     }
 
-    static double calcEntropy(int classACount, int classBCount) {
+    double calcEntropy(int classACount, int classBCount) {
         final int setTotalCount = classACount + classBCount;
         final double probabilityA = (double) classACount / setTotalCount;
         final double probabilityB = (double) classBCount / setTotalCount;
@@ -157,7 +158,51 @@ public class ID3 {
         return -A - B;
     }
 
-    private static double log2(double d) {
+    private double log2(double d) {
         return Math.log(d) / Math.log(2);
+    }
+
+    Node split(List<Boolean[]> set, int index) {
+        List<Boolean[]> left = new LinkedList<>();
+        List<Boolean[]> right = new LinkedList<>();
+
+        for (Boolean[] booleans : set) {
+            if (booleans[index])
+                right.add(removeElement(index, booleans));
+            else
+                left.add(removeElement(index, booleans));
+        }
+        return new Node(right, left);
+    }
+
+    Boolean[] removeElement(int elementIndex, Boolean[] booleans) {
+        Boolean[] result = new Boolean[booleans.length - 1];
+        int j = 0;
+        for (int i = 0; i < result.length; ++i, ++j) {
+            if (j != elementIndex)
+                result[i] = booleans[j];
+            else
+                --i;
+        }
+
+        return result;
+    }
+
+    class Node {
+        private final List<Boolean[]> left;
+        private final List<Boolean[]> right;
+
+        Node(List<Boolean[]> left, List<Boolean[]> right) {
+            this.left = Collections.unmodifiableList(left);
+            this.right = Collections.unmodifiableList(right);
+        }
+
+        List<Boolean[]> getLeft() {
+            return left;
+        }
+
+        List<Boolean[]> getRight() {
+            return right;
+        }
     }
 }

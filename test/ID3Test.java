@@ -1,13 +1,13 @@
-import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class ID3Test {
-    private static List<Boolean[]> spamSet;
     private static final String SPAM_EXAMPLE = "1 0 0 1\n" +
             "0 0 1 1\n" +
             "0 0 0 0\n" +
@@ -18,11 +18,8 @@ public class ID3Test {
             "1 0 0 1\n" +
             "0 0 0 0\n" +
             "1 0 0 1\n";
-
-    @BeforeClass
-    public static void setupClass() {
-        spamSet = convertToSet(SPAM_EXAMPLE);
-    }
+    private static final ID3 id3 = new ID3();
+    private static List<Boolean[]> spamSet = Collections.unmodifiableList(convertToSet(SPAM_EXAMPLE));
 
     @Test
     public void canCorrectlyParseFileWithExtraWhiteSpace() {
@@ -45,19 +42,19 @@ public class ID3Test {
 
     @Test
     public void canCalculateEntropy() {
-        assertEquals(0.0, ID3.calcEntropy(0, 5), 0.01);
-        assertEquals(0.0, ID3.calcEntropy(5, 0), 0.01);
+        assertEquals(0.0, id3.calcEntropy(0, 5), 0.01);
+        assertEquals(0.0, id3.calcEntropy(5, 0), 0.01);
 
-        assertEquals(1.0, ID3.calcEntropy(2, 2), 0.001);
+        assertEquals(1.0, id3.calcEntropy(2, 2), 0.001);
 
-        assertEquals(0.59, ID3.calcEntropy(1, 6), 0.01);
-        assertEquals(0.97, ID3.calcEntropy(3, 2), 0.01);
-        assertEquals(0.918, ID3.calcEntropy(1, 2), 0.001);
+        assertEquals(0.59, id3.calcEntropy(1, 6), 0.01);
+        assertEquals(0.97, id3.calcEntropy(3, 2), 0.01);
+        assertEquals(0.918, id3.calcEntropy(1, 2), 0.001);
     }
 
     @Test
     public void canCalculateConditionalEntropy() {
-        double[] conditionalEntropies = ID3.calcConditionalEntropies(spamSet);
+        double[] conditionalEntropies = id3.calcConditionalEntropies(spamSet);
         assertEquals(0.7219, conditionalEntropies[0], 0.0001);
         assertEquals(0.7635, conditionalEntropies[1], 0.0001);
         assertEquals(0.9651, conditionalEntropies[2], 0.0001);
@@ -65,7 +62,7 @@ public class ID3Test {
 
     @Test
     public void canCalculateInformationGain() {
-        double[] infoGains = ID3.calcInfoGain(spamSet);
+        double[] infoGains = id3.calcInfoGain(spamSet);
         assertEquals(0.28, infoGains[0], 0.01);
         assertEquals(0.24, infoGains[1], 0.01);
         assertEquals(0.035, infoGains[2], 0.01);
@@ -73,7 +70,64 @@ public class ID3Test {
 
     @Test
     public void canDetermineIndexOfSplit() {
-        assertEquals(0, ID3.determineIndexOfSplit(spamSet));
+        assertEquals(0, id3.determineIndexOfSplit(spamSet));
+    }
+
+    @Test
+    public void canRemoveElementFromArray() {
+        Boolean[] test = new Boolean[]{true, false, true, false};
+        assertArrayEquals(new Boolean[]{false, true, false}, id3.removeElement(0, test));
+    }
+
+    @Test
+    public void canSplitOnFirst() {
+        ID3.Node n = id3.split(spamSet, 0);
+        final String expectedLeft = "0 0 1\n" +
+                "1 0 0\n" +
+                "0 1 1\n" +
+                "0 0 1\n" +
+                "0 0 1\n";
+        final String expectedRight = "0 1 1\n" +
+                "0 0 0\n" +
+                "0 0 0\n" +
+                "1 1 0\n" +
+                "0 0 0\n";
+        assertEquals(expectedLeft, ID3.convertSetToString(n.getLeft()));
+        assertEquals(expectedRight, ID3.convertSetToString(n.getRight()));
+    }
+
+    @Test
+    public void canSplitOnMiddle() {
+        ID3.Node n = id3.split(spamSet, 1);
+        final String expectedLeft = "1 0 0\n" +
+                "0 1 0\n";
+        final String expectedRight = "1 0 1\n" +
+                "0 1 1\n" +
+                "0 0 0\n" +
+                "0 0 0\n" +
+                "1 1 1\n" +
+                "1 0 1\n" +
+                "0 0 0\n" +
+                "1 0 1\n";
+        assertEquals(expectedLeft, ID3.convertSetToString(n.getLeft()));
+        assertEquals(expectedRight, ID3.convertSetToString(n.getRight()));
+    }
+
+    @Test
+    public void canSplitOnLast() {
+        ID3.Node n = id3.split(spamSet, 2);
+        final String expectedLeft = "0 0 1\n" +
+                "1 0 1\n" +
+                "0 1 0\n";
+        final String expectedRight = "1 0 1\n" +
+                "0 0 0\n" +
+                "1 1 0\n" +
+                "0 0 0\n" +
+                "1 0 1\n" +
+                "0 0 0\n" +
+                "1 0 1\n";
+        assertEquals(expectedLeft, ID3.convertSetToString(n.getLeft()));
+        assertEquals(expectedRight, ID3.convertSetToString(n.getRight()));
     }
 
     private static List<Boolean[]> convertToSet(String setData) {
