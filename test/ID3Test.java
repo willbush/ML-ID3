@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.*;
 
 public class ID3Test {
     private static final String SPAM_EXAMPLE = "1 0 0 1\n" +
@@ -81,7 +81,7 @@ public class ID3Test {
 
     @Test
     public void canSplitOnFirst() {
-        ID3.Node n = id3.split(spamSet, 0);
+        Tuple<List<Boolean[]>, List<Boolean[]>> n = id3.split(spamSet, 0);
         final String expectedLeft = "0 0 1\n" +
                 "1 0 0\n" +
                 "0 1 1\n" +
@@ -98,7 +98,7 @@ public class ID3Test {
 
     @Test
     public void canSplitOnMiddle() {
-        ID3.Node n = id3.split(spamSet, 1);
+        Tuple<List<Boolean[]>, List<Boolean[]>> n = id3.split(spamSet, 1);
         final String expectedLeft = "1 0 0\n" +
                 "0 1 0\n";
         final String expectedRight = "1 0 1\n" +
@@ -115,7 +115,7 @@ public class ID3Test {
 
     @Test
     public void canSplitOnLast() {
-        ID3.Node n = id3.split(spamSet, 2);
+        Tuple<List<Boolean[]>, List<Boolean[]>> n = id3.split(spamSet, 2);
         final String expectedLeft = "0 0 1\n" +
                 "1 0 1\n" +
                 "0 1 0\n";
@@ -128,6 +128,84 @@ public class ID3Test {
                 "1 0 1\n";
         assertEquals(expectedLeft, ID3.convertSetToString(n.getLeft()));
         assertEquals(expectedRight, ID3.convertSetToString(n.getRight()));
+    }
+
+    @Test
+    public void canLearnSimplePureTree() {
+        final String pureTest = "1 0 1\n" +
+                "0 0 1\n" +
+                "1 1 1\n" +
+                "0 0 1\n" +
+                "1 0 1\n" +
+                "0 0 1\n" +
+                "1 0 1\n";
+        ID3.Tree t1 = id3.learnTree(convertToSet("0 0"));
+        assertTrue(t1.isLeafNode());
+        assertEquals(false, t1.getPredictedValue());
+
+        ID3.Tree t2 = id3.learnTree(convertToSet("0 0\n1 0\n1 0"));
+        assertTrue(t2.isLeafNode());
+        assertEquals(false, t2.getPredictedValue());
+
+        ID3.Tree t3 = id3.learnTree(convertToSet("0 1\n1 1\n1 1"));
+        assertTrue(t3.isLeafNode());
+        assertEquals(true, t3.getPredictedValue());
+
+        ID3.Tree t4 = id3.learnTree(convertToSet(pureTest));
+        assertTrue(t4.isLeafNode());
+        assertEquals(true, t4.getPredictedValue());
+    }
+
+    @Test
+    public void canLearnSimpleImpureTree() {
+        final String pureTest = "1 0 1\n" +
+                "0 0 1\n" +
+                "1 1 1\n" +
+                "0 0 1\n" +
+                "1 0 1\n" +
+                "0 0 1\n" +
+                "1 0 0\n";
+        ID3.Tree t1 = id3.learnTree(convertToSet("0 0\n1 1"));
+        assertTrue(t1.isLeafNode());
+        assertEquals(true, t1.getPredictedValue());
+
+        ID3.Tree t2 = id3.learnTree(convertToSet(pureTest));
+        assertFalse(t2.isLeafNode());
+        assertNull(t2.getPredictedValue());
+    }
+
+    @Test
+    public void learnTree_returnsLeafWhenGivenUnsplittable1() {
+        final String unsplittableTree = "0 0 1\n" +
+                "0 0 1\n" +
+                "0 0 0\n" +
+                "0 0 0\n" +
+                "0 0 1\n" +
+                "0 0 1\n" +
+                "0 0 0\n";
+        ID3.Tree t = id3.learnTree(convertToSet(unsplittableTree));
+        assertTrue(t.isLeafNode());
+        assertEquals(true, t.getPredictedValue());
+    }
+
+    @Test
+    public void learnTree_returnsLeafWhenGivenUnsplittable2() {
+        final String unsplittableTree = "0 0 1\n" +
+                "0 0 1\n" +
+                "0 0 0\n" +
+                "1 1 0\n" +
+                "0 0 0\n" +
+                "1 1 0\n" +
+                "1 1 0\n";
+        ID3.Tree t = id3.learnTree(convertToSet(unsplittableTree));
+        assertTrue(t.isLeafNode());
+        assertEquals(false, t.getPredictedValue());
+    }
+
+    @Test
+    public void learnTree_canLearnSpamExample() {
+        ID3.Tree t = id3.learnTree(spamSet);
+        //TODO: verify correctness of tree.
     }
 
     private static List<Boolean[]> convertToSet(String setData) {

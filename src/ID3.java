@@ -2,7 +2,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -78,7 +77,7 @@ public class ID3 {
         }
     }
 
-    public int determineIndexOfSplit(List<Boolean[]> spamSet) {
+    int determineIndexOfSplit(List<Boolean[]> spamSet) {
         double[] infoGains = calcInfoGain(spamSet);
         int splitIndex = 0;
 
@@ -111,15 +110,15 @@ public class ID3 {
         int[] classTrueCountOnFalseBranch = new int[attributeLen];
         int[] classFalseCountOnFalseBranch = new int[attributeLen];
 
-        for (Boolean[] booleans : set) {
+        for (Boolean[] bools : set) {
             for (int i = 0; i < attributeLen; ++i) {
-                if (booleans[i] && booleans[classIndex])
+                if (bools[i] && bools[classIndex])
                     classTrueCountOnTrueBranch[i] += 1;
-                else if (booleans[i] && !booleans[classIndex])
+                else if (bools[i] && !bools[classIndex])
                     classFalseCountOnTrueBranch[i] += 1;
-                else if (!booleans[i] && booleans[classIndex])
+                else if (!bools[i] && bools[classIndex])
                     classTrueCountOnFalseBranch[i] += 1;
-                else if (!booleans[i] && !booleans[classIndex])
+                else if (!bools[i] && !bools[classIndex])
                     classFalseCountOnFalseBranch[i] += 1;
             }
         }
@@ -140,8 +139,8 @@ public class ID3 {
         final int classIndex = set.get(0).length - 1;
         int trueCount = 0;
 
-        for (Boolean[] booleans : set)
-            if (booleans[classIndex])
+        for (Boolean[] bools : set)
+            if (bools[classIndex])
                 trueCount += 1;
 
         return calcEntropy(trueCount, set.size() - trueCount);
@@ -162,25 +161,25 @@ public class ID3 {
         return Math.log(d) / Math.log(2);
     }
 
-    Node split(List<Boolean[]> set, int index) {
+    Tuple<List<Boolean[]>, List<Boolean[]>> split(List<Boolean[]> set, int index) {
         List<Boolean[]> left = new LinkedList<>();
         List<Boolean[]> right = new LinkedList<>();
 
-        for (Boolean[] booleans : set) {
-            if (booleans[index])
-                right.add(removeElement(index, booleans));
+        for (Boolean[] bools : set) {
+            if (bools[index])
+                right.add(removeElement(index, bools));
             else
-                left.add(removeElement(index, booleans));
+                left.add(removeElement(index, bools));
         }
-        return new Node(right, left);
+        return new Tuple<>(right, left);
     }
 
-    Boolean[] removeElement(int elementIndex, Boolean[] booleans) {
-        Boolean[] result = new Boolean[booleans.length - 1];
+    Boolean[] removeElement(int elementIndex, Boolean[] bools) {
+        Boolean[] result = new Boolean[bools.length - 1];
         int j = 0;
         for (int i = 0; i < result.length; ++i, ++j) {
             if (j != elementIndex)
-                result[i] = booleans[j];
+                result[i] = bools[j];
             else
                 --i;
         }
@@ -188,21 +187,96 @@ public class ID3 {
         return result;
     }
 
-    class Node {
-        private final List<Boolean[]> left;
-        private final List<Boolean[]> right;
+    Tree learnTree(List<Boolean[]> set) {
+        Tree tree = new Tree(set);
 
-        Node(List<Boolean[]> left, List<Boolean[]> right) {
-            this.left = Collections.unmodifiableList(left);
-            this.right = Collections.unmodifiableList(right);
+        if (tree.isLeafNode)
+            return tree;
+
+        Tuple<List<Boolean[]>, List<Boolean[]>> tuple = split(set, determineIndexOfSplit(set));
+        tree.setLeft(learnTree(tuple.getLeft()));
+        tree.setRight(learnTree(tuple.getRight()));
+        return tree;
+    }
+
+    class Tree {
+        private final boolean isLeafNode;
+        private Boolean predicatedValue;
+        private Tree left;
+        private Tree right;
+
+        Tree(List<Boolean[]> set) {
+            isLeafNode = determineIfLeaf(set);
         }
 
-        List<Boolean[]> getLeft() {
+        private boolean determineIfLeaf(List<Boolean[]> set) {
+            final boolean isLeaf;
+            final int classIndex = set.get(0).length - 1;
+            final boolean initialValue = set.get(0)[classIndex];
+            final boolean isPure = !set.parallelStream().anyMatch(bools -> bools[classIndex] != initialValue);
+
+            if (isPure) {
+                predicatedValue = initialValue;
+                isLeaf = true;
+            } else {
+                boolean isUnsplittable = !set.parallelStream().anyMatch(this::isVaried);
+
+                if (isUnsplittable) {
+                    isLeaf = true;
+                    predicatedValue = getMajorityClassValue(set);
+                } else {
+                    isLeaf = false;
+                }
+            }
+            return isLeaf;
+        }
+
+        private boolean isVaried(Boolean[] bools) {
+            boolean initialAttributeValue = bools[0];
+            int attributeLen = bools.length - 1;
+            for (int i = 0; i < attributeLen; ++i)
+                if (bools[i] != initialAttributeValue)
+                    return true;
+
+            return false;
+        }
+
+        private Boolean getMajorityClassValue(List<Boolean[]> set) {
+            int trueCount = 0;
+            int falseCount = 0;
+            int classIndex = set.get(0).length - 1;
+
+            for (Boolean[] bools : set) {
+                if (bools[classIndex])
+                    trueCount += 1;
+                else
+                    falseCount += 1;
+            }
+            return trueCount >= falseCount; // returns true if no majority
+        }
+
+        Tree getLeft() {
             return left;
         }
 
-        List<Boolean[]> getRight() {
+        Tree getRight() {
             return right;
+        }
+
+        void setLeft(Tree left) {
+            this.left = left;
+        }
+
+        void setRight(Tree right) {
+            this.right = right;
+        }
+
+        Boolean getPredictedValue() {
+            return predicatedValue;
+        }
+
+        boolean isLeafNode() {
+            return isLeafNode;
         }
     }
 }
