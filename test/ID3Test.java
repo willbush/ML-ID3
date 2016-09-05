@@ -19,13 +19,12 @@ public class ID3Test {
             "1 0 0 1\n" +
             "0 0 0 0\n" +
             "1 0 0 1\n";
-    private static final ID3 id3 = new ID3();
     private static DataSet spamSet = convertToSet(SPAM_EXAMPLE);
 
     @Test(expected = ID3.EmptyFileException.class)
     public void canThrowIfGivenEmptyFile() throws IOException {
         final String emptyFileTest = "resources/dataFormatTest/emptyFile.dat";
-        ID3.getSetFromFileAsString(emptyFileTest);
+        Main.getSetFromFileAsString(emptyFileTest);
     }
 
     @Test
@@ -40,29 +39,29 @@ public class ID3Test {
                 "1 0 1 0\n" +
                 "1 1 0 0\n" +
                 "1 1 1 1\n";
-        assertEquals(expected, ID3.getSetFromFileAsString(dataFormatTest));
+        assertEquals(expected, Main.getSetFromFileAsString(dataFormatTest));
     }
 
     @Test
     public void canGetWhatWasGiven() {
-        assertEquals(SPAM_EXAMPLE, ID3.convertSetToString(spamSet));
+        assertEquals(SPAM_EXAMPLE, Main.convertSetToString(spamSet));
     }
 
     @Test
     public void canCalculateEntropy() {
-        assertEquals(0.0, id3.calcEntropy(0, 5), 0.01);
-        assertEquals(0.0, id3.calcEntropy(5, 0), 0.01);
+        assertEquals(0.0, ID3.calcEntropy(0, 5), 0.01);
+        assertEquals(0.0, ID3.calcEntropy(5, 0), 0.01);
 
-        assertEquals(1.0, id3.calcEntropy(2, 2), 0.001);
+        assertEquals(1.0, ID3.calcEntropy(2, 2), 0.001);
 
-        assertEquals(0.59, id3.calcEntropy(1, 6), 0.01);
-        assertEquals(0.97, id3.calcEntropy(3, 2), 0.01);
-        assertEquals(0.918, id3.calcEntropy(1, 2), 0.001);
+        assertEquals(0.59, ID3.calcEntropy(1, 6), 0.01);
+        assertEquals(0.97, ID3.calcEntropy(3, 2), 0.01);
+        assertEquals(0.918, ID3.calcEntropy(1, 2), 0.001);
     }
 
     @Test
     public void canCalculateConditionalEntropy() {
-        double[] conditionalEntropies = id3.calcConditionalEntropies(spamSet.getObservations(), spamSet.getLabels());
+        double[] conditionalEntropies = ID3.calcConditionalEntropies(spamSet.getObservations(), spamSet.getLabels());
         assertEquals(0.7219, conditionalEntropies[0], 0.0001);
         assertEquals(0.7635, conditionalEntropies[1], 0.0001);
         assertEquals(0.9651, conditionalEntropies[2], 0.0001);
@@ -70,7 +69,7 @@ public class ID3Test {
 
     @Test
     public void canCalculateInformationGain() {
-        double[] infoGains = id3.calcInfoGain(spamSet.getObservations(), spamSet.getLabels());
+        double[] infoGains = ID3.calcInfoGain(spamSet.getObservations(), spamSet.getLabels());
         assertEquals(0.28, infoGains[0], 0.01);
         assertEquals(0.24, infoGains[1], 0.01);
         assertEquals(0.035, infoGains[2], 0.01);
@@ -78,12 +77,12 @@ public class ID3Test {
 
     @Test
     public void canDetermineIndexOfSplit() {
-        assertEquals(0, id3.determineIndexOfSplit(spamSet.getObservations(), spamSet.getLabels()));
+        assertEquals(0, ID3.determineIndexOfSplit(spamSet.getObservations(), spamSet.getLabels()));
     }
 
     @Test
     public void canSplitOnFirst() {
-        Tuple<DataSet, DataSet> t = id3.split(spamSet, 0);
+        Tuple<DataSet, DataSet> t = ID3.split(spamSet, 0);
         final String expectedLeft = "viagra learning\n" +
                 "0 1 1\n" +
                 "0 0 0\n" +
@@ -96,13 +95,13 @@ public class ID3Test {
                 "0 1 1\n" +
                 "0 0 1\n" +
                 "0 0 1\n";
-        assertEquals(expectedLeft, ID3.convertSetToString(t.getLeft()));
-        assertEquals(expectedRight, ID3.convertSetToString(t.getRight()));
+        assertEquals(expectedLeft, Main.convertSetToString(t.getLeft()));
+        assertEquals(expectedRight, Main.convertSetToString(t.getRight()));
     }
 
     @Test
     public void canSplitOnMiddle() {
-        Tuple<DataSet, DataSet> t = id3.split(spamSet, 1);
+        Tuple<DataSet, DataSet> t = ID3.split(spamSet, 1);
         final String expectedLeft = "nigeria learning\n" +
                 "1 0 1\n" +
                 "0 1 1\n" +
@@ -115,13 +114,13 @@ public class ID3Test {
         final String expectedRight = "nigeria learning\n" +
                 "1 0 0\n" +
                 "0 1 0\n";
-        assertEquals(expectedLeft, ID3.convertSetToString(t.getLeft()));
-        assertEquals(expectedRight, ID3.convertSetToString(t.getRight()));
+        assertEquals(expectedLeft, Main.convertSetToString(t.getLeft()));
+        assertEquals(expectedRight, Main.convertSetToString(t.getRight()));
     }
 
     @Test
     public void canSplitOnLast() {
-        Tuple<DataSet, DataSet> t = id3.split(spamSet, 2);
+        Tuple<DataSet, DataSet> t = ID3.split(spamSet, 2);
         final String expectedLeft = "nigeria viagra\n" +
                 "1 0 1\n" +
                 "0 0 0\n" +
@@ -134,8 +133,8 @@ public class ID3Test {
                 "0 0 1\n" +
                 "1 0 1\n" +
                 "0 1 0\n";
-        assertEquals(expectedLeft, ID3.convertSetToString(t.getLeft()));
-        assertEquals(expectedRight, ID3.convertSetToString(t.getRight()));
+        assertEquals(expectedLeft, Main.convertSetToString(t.getLeft()));
+        assertEquals(expectedRight, Main.convertSetToString(t.getRight()));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -145,7 +144,7 @@ public class ID3Test {
         observations.add(Arrays.asList(true, true, true));
         List<Boolean> labels = Collections.singletonList(true);
         // There must exists an attribute name for each attribute.
-        id3.learnTree(attributeNames, observations, labels);
+        new ID3(new DataSet(attributeNames, observations, labels));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -156,7 +155,7 @@ public class ID3Test {
         observations.add(Arrays.asList(true, false));
         List<Boolean> labels = Collections.singletonList(true);
         // There must exists an attribute name for each attribute.
-        id3.learnTree(attributeNames, observations, labels);
+        new ID3(new DataSet(attributeNames, observations, labels));
     }
 
     @Test
@@ -169,20 +168,20 @@ public class ID3Test {
                 "1 0 1\n" +
                 "0 0 1\n" +
                 "1 0 1\n";
-        ID3.Tree t1 = id3.learnTree(convertToSet("a\n0 0"));
+        ID3.Tree t1 = new ID3(convertToSet("a\n0 0")).learnTree();
         assertTrue(t1.isLeafNode());
 
         assertEquals(false, t1.getPredictedValue().orElse(true));
 
-        ID3.Tree t2 = id3.learnTree(convertToSet("a\n0 0\n1 0\n1 0"));
+        ID3.Tree t2 = new ID3(convertToSet("a\n0 0\n1 0\n1 0")).learnTree();
         assertTrue(t2.isLeafNode());
         assertEquals(false, t2.getPredictedValue().orElse(true));
 
-        ID3.Tree t3 = id3.learnTree(convertToSet("a\n0 1\n1 1\n1 1"));
+        ID3.Tree t3 = new ID3(convertToSet("a\n0 1\n1 1\n1 1")).learnTree();
         assertTrue(t3.isLeafNode());
         assertEquals(true, t3.getPredictedValue().orElse(false));
 
-        ID3.Tree t4 = id3.learnTree(convertToSet(pureTest));
+        ID3.Tree t4 = new ID3(convertToSet(pureTest)).learnTree();
         assertTrue(t4.isLeafNode());
         assertEquals(true, t4.getPredictedValue().orElse(false));
     }
@@ -197,28 +196,29 @@ public class ID3Test {
                 "1 0 1\n" +
                 "0 0 1\n" +
                 "1 0 0\n";
-        ID3.Tree t2 = id3.learnTree(convertToSet(pureTest));
+        ID3.Tree t2 = new ID3(convertToSet(pureTest)).learnTree();
         assertFalse(t2.isLeafNode());
         assertFalse(t2.getPredictedValue().isPresent());
     }
 
     @Test
     public void learnTree_returnsLeafWhenGivenUnsplittable1() {
-        final String unsplittableTree = "0 0 1\n" +
+        final String unsplittableTree = "a b\n" +
+                "0 0 1\n" +
                 "0 0 1\n" +
                 "0 0 0\n" +
                 "0 0 0\n" +
                 "0 0 1\n" +
                 "0 0 1\n" +
                 "0 0 0\n";
-        ID3.Tree t = id3.learnTree(convertToSet(unsplittableTree));
+        ID3.Tree t = new ID3(convertToSet(unsplittableTree)).learnTree();
         assertTrue(t.isLeafNode());
         assertEquals(true, t.getPredictedValue().orElse(false));
     }
 
     @Test
     public void learnTree_returnsNonLeafWhenAttributeValuesVaryByRowButNotColumn() {
-        final String unsplittableTree = "a b" +
+        final String unsplittableTree = "a b\n" +
                 "0 0 1\n" +
                 "0 0 1\n" +
                 "0 0 0\n" +
@@ -226,13 +226,13 @@ public class ID3Test {
                 "0 0 0\n" +
                 "1 1 0\n" +
                 "1 1 0\n";
-        ID3.Tree t = id3.learnTree(convertToSet(unsplittableTree));
+        ID3.Tree t = new ID3(convertToSet(unsplittableTree)).learnTree();
         assertFalse(t.isLeafNode());
     }
 
     @Test
     public void canPrintTree() {
-        ID3.Tree t = id3.learnTree(spamSet);
+        ID3.Tree t = new ID3(spamSet).learnTree();
         final String expectedDiagram = "nigeria = 0 :\n" +
                 "| learning = 0 : 0\n" +
                 "| learning = 1 :\n" +
@@ -242,6 +242,13 @@ public class ID3Test {
                 "| viagra = 0 : 1\n" +
                 "| viagra = 1 : 0\n";
         assertEquals(expectedDiagram, t.getTreeDiagram());
+    }
+
+    @Test
+    public void learnTree_canLearnDataSet1() throws IOException {
+        final String trainPath = "resources/dataSet1/train.dat";
+        ID3.Tree t = new ID3(Main.getSetFromFile(trainPath)).learnTree();
+        System.out.println(t.getTreeDiagram());
     }
 
     private static DataSet convertToSet(String data) {

@@ -1,120 +1,25 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
-public class ID3 {
-    private static final String WHITE_SPACE_REGEX = "\\s+";
+class ID3 {
+    private final DataSet dataSet;
+    private final boolean majorityLabelOfEntireSet;
 
-    public static void main(String[] args) {
-        if (args.length != 2) {
-            printProgramUsage();
-        }
-
-        try {
-            System.out.println(getSetFromFileAsString(args[0]));
-            System.out.println(getSetFromFileAsString(args[1]));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    static String getSetFromFileAsString(String path) throws IOException {
-        return convertSetToString(getSetFromFile(path));
-    }
-
-    static String convertSetToString(DataSet set) {
-        StringBuilder sb = new StringBuilder();
-        List<String> names = set.getAttributeNames();
-
-        for (int i = 0; i < names.size(); ++i) {
-            sb.append(names.get(i));
-            if (i != names.size() - 1)
-                sb.append(" ");
-        }
-        sb.append("\n");
-
-        int labelIndex = 0;
-        for (List<Boolean> elements : set.getObservations()) {
-            for (int i = 0; i < elements.size(); ++i) {
-                sb.append(elements.get(i) ? "1 " : "0 ");
-                if (i == elements.size() - 1)
-                    sb.append(set.getLabels().get(labelIndex) ? "1" : "0");
-            }
-            sb.append("\n");
-            ++labelIndex;
-        }
-        return sb.toString();
-    }
-
-    private static void printProgramUsage() {
-        String usage = "The program requires two arguments that specify the path" +
-                " to the training and test data.\n" +
-                "For example:\n" +
-                "java ID3 \"/dataSet/train.dat\" \"/dataSet/test.dat\"";
-        System.out.println(usage);
-    }
-
-    private static DataSet getSetFromFile(String path) throws IOException {
-        List<String> attributeNames;
-        List<List<Boolean>> observations = new LinkedList<>();
-        List<Boolean> labels = new ArrayList<>();
-
-        File f = new File(path);
-
-        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
-            final String fileEmptyError = "The file at the following given path is empty: " + path;
-            attributeNames = readAttributesNames(br).orElseThrow(() -> new EmptyFileException(fileEmptyError));
-            String line;
-
-            while ((line = br.readLine()) != null) {
-                if (!line.isEmpty()) {
-                    String[] elements = line.split(WHITE_SPACE_REGEX);
-                    List<Boolean> attributeValues = new ArrayList<>(elements.length - 1);
-
-                    for (int i = 0; i < elements.length; ++i) {
-                        boolean isOne = elements[i].equals("1");
-                        if (i == elements.length - 1)
-                            labels.add(isOne);
-                        else
-                            attributeValues.add(isOne);
-                    }
-                    observations.add(attributeValues);
-                }
-            }
-        }
-        return new DataSet(attributeNames, observations, labels);
-    }
-
-    private static Optional<List<String>> readAttributesNames(BufferedReader br) throws IOException {
-        String line;
-
-        // move reader past blank lines.
-        do {
-            line = br.readLine();
-        } while (line != null && line.trim().isEmpty());
-
-
-        List<String> attributeNames = null;
-
-        if (line != null) {
-            String[] words = line.split(WHITE_SPACE_REGEX);
-            attributeNames = Arrays.asList(Arrays.copyOfRange(words, 0, words.length - 1));
-        }
-        return Optional.ofNullable(attributeNames);
-    }
-
-    Tree learnTree(List<String> attributeNames, List<List<Boolean>> observations, List<Boolean> labels) {
-        if (attributeNames.size() != observations.get(0).size())
+    ID3(DataSet dataSet) {
+        if (dataSet.getAttributeNames().size() != dataSet.getObservations().get(0).size())
             throw new IllegalArgumentException("There must exist an attribute name for each attribute.");
-        if (labels.size() != observations.size())
+        if (dataSet.getLabels().size() != dataSet.getObservations().size())
             throw new IllegalArgumentException("There must exists a label for each observation.");
 
-        return learnTree(new DataSet(attributeNames, observations, labels));
+        this.dataSet = dataSet;
+        majorityLabelOfEntireSet = getMajorityLabelValue(dataSet.getLabels());
     }
 
-    Tree learnTree(DataSet set) {
+    Tree learnTree() {
+        return learnTree(dataSet);
+    }
+
+    private Tree learnTree(DataSet set) {
         Tree tree = new Tree(set);
 
         if (tree.isLeafNode)
@@ -128,7 +33,7 @@ public class ID3 {
         return tree;
     }
 
-    int determineIndexOfSplit(List<List<Boolean>> observations, List<Boolean> labels) {
+    static int determineIndexOfSplit(List<List<Boolean>> observations, List<Boolean> labels) {
         double[] infoGains = calcInfoGain(observations, labels);
         int splitIndex = 0;
 
@@ -142,7 +47,7 @@ public class ID3 {
         return splitIndex;
     }
 
-    double[] calcInfoGain(List<List<Boolean>> observations, List<Boolean> labels) {
+    static double[] calcInfoGain(List<List<Boolean>> observations, List<Boolean> labels) {
         double[] conditionalEntropies = calcConditionalEntropies(observations, labels);
         double setEntropy = calcEntropy(observations, labels);
         double[] infoGains = new double[conditionalEntropies.length];
@@ -153,7 +58,7 @@ public class ID3 {
         return infoGains;
     }
 
-    double[] calcConditionalEntropies(List<List<Boolean>> observations, List<Boolean> labels) {
+    static double[] calcConditionalEntropies(List<List<Boolean>> observations, List<Boolean> labels) {
         final int attributeLen = observations.get(0).size();
         int[] classTrueCountOnTrueBranch = new int[attributeLen];
         int[] classFalseCountOnTrueBranch = new int[attributeLen];
@@ -183,11 +88,11 @@ public class ID3 {
         return conditionalEntropies;
     }
 
-    private double getWeightedAverage(double setSize, int trueCount, int falseCount) {
+    private static double getWeightedAverage(double setSize, int trueCount, int falseCount) {
         return ((trueCount + falseCount) / setSize) * calcEntropy(trueCount, falseCount);
     }
 
-    private double calcEntropy(List<List<Boolean>> observations, List<Boolean> labels) {
+    private static double calcEntropy(List<List<Boolean>> observations, List<Boolean> labels) {
         int trueCount = 0;
 
         for (Boolean labelIsTrue : labels)
@@ -197,7 +102,7 @@ public class ID3 {
         return calcEntropy(trueCount, observations.size() - trueCount);
     }
 
-    double calcEntropy(int classACount, int classBCount) {
+    static double calcEntropy(int classACount, int classBCount) {
         final int setTotalCount = classACount + classBCount;
         final double probabilityA = (double) classACount / setTotalCount;
         final double probabilityB = (double) classBCount / setTotalCount;
@@ -208,11 +113,11 @@ public class ID3 {
         return -A - B;
     }
 
-    private double log2(double d) {
+    private static double log2(double d) {
         return Math.log(d) / Math.log(2);
     }
 
-    Tuple<DataSet, DataSet> split(DataSet set, int index) {
+    static Tuple<DataSet, DataSet> split(DataSet set, int index) {
         List<List<Boolean>> leftObservations = new LinkedList<>();
         List<Boolean> leftLabels = new ArrayList<>();
 
@@ -234,10 +139,23 @@ public class ID3 {
         return new Tuple<>(left, right);
     }
 
-    private <T> List<T> removeElement(int index, List<T> observations) {
+    private static <T> List<T> removeElement(int index, List<T> observations) {
         List<T> result = new ArrayList<>(observations);
         result.remove(index);
         return Collections.unmodifiableList(result);
+    }
+
+    private Boolean getMajorityLabelValue(List<Boolean> labels) {
+        int trueCount = 0;
+        int falseCount = 0;
+
+        for (Boolean labelIsTrue : labels) {
+            if (labelIsTrue)
+                trueCount += 1;
+            else
+                falseCount += 1;
+        }
+        return trueCount >= falseCount; // returns true if no majority
     }
 
     class Tree {
@@ -289,19 +207,6 @@ public class ID3 {
                     return true;
 
             return false;
-        }
-
-        private Boolean getMajorityLabelValue(List<Boolean> labels) {
-            int trueCount = 0;
-            int falseCount = 0;
-
-            for (Boolean labelIsTrue : labels) {
-                if (labelIsTrue)
-                    trueCount += 1;
-                else
-                    falseCount += 1;
-            }
-            return trueCount >= falseCount; // returns true if no majority
         }
 
         boolean isLeafNode() {
