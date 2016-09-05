@@ -1,14 +1,15 @@
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ID3Test {
-    private static final String SPAM_EXAMPLE = "1 0 0 1\n" +
+    private static final String SPAM_EXAMPLE = "nigeria viagra learning\n" +
+            "1 0 0 1\n" +
             "0 0 1 1\n" +
             "0 0 0 0\n" +
             "1 1 0 0\n" +
@@ -19,12 +20,19 @@ public class ID3Test {
             "0 0 0 0\n" +
             "1 0 0 1\n";
     private static final ID3 id3 = new ID3();
-    private static List<Boolean[]> spamSet = Collections.unmodifiableList(convertToSet(SPAM_EXAMPLE));
+    private static DataSet spamSet = convertToSet(SPAM_EXAMPLE);
+
+    @Test(expected = ID3.EmptyFileException.class)
+    public void canThrowIfGivenEmptyFile() throws IOException {
+        final String emptyFileTest = "resources/dataFormatTest/emptyFile.dat";
+        ID3.getSetFromFileAsString(emptyFileTest);
+    }
 
     @Test
-    public void canCorrectlyParseFileWithExtraWhiteSpace() {
+    public void canCorrectlyParseFileWithExtraWhiteSpace() throws IOException {
         final String dataFormatTest = "resources/dataFormatTest/test.dat";
-        final String expected = "0 0 0 0\n" +
+        final String expected = "A B C\n" +
+                "0 0 0 0\n" +
                 "0 0 1 0\n" +
                 "0 1 0 0\n" +
                 "0 1 1 0\n" +
@@ -54,7 +62,7 @@ public class ID3Test {
 
     @Test
     public void canCalculateConditionalEntropy() {
-        double[] conditionalEntropies = id3.calcConditionalEntropies(spamSet);
+        double[] conditionalEntropies = id3.calcConditionalEntropies(spamSet.getObservations(), spamSet.getLabels());
         assertEquals(0.7219, conditionalEntropies[0], 0.0001);
         assertEquals(0.7635, conditionalEntropies[1], 0.0001);
         assertEquals(0.9651, conditionalEntropies[2], 0.0001);
@@ -62,7 +70,7 @@ public class ID3Test {
 
     @Test
     public void canCalculateInformationGain() {
-        double[] infoGains = id3.calcInfoGain(spamSet);
+        double[] infoGains = id3.calcInfoGain(spamSet.getObservations(), spamSet.getLabels());
         assertEquals(0.28, infoGains[0], 0.01);
         assertEquals(0.24, infoGains[1], 0.01);
         assertEquals(0.035, infoGains[2], 0.01);
@@ -70,38 +78,39 @@ public class ID3Test {
 
     @Test
     public void canDetermineIndexOfSplit() {
-        assertEquals(0, id3.determineIndexOfSplit(spamSet));
+        assertEquals(0, id3.determineIndexOfSplit(spamSet.getObservations(), spamSet.getLabels()));
     }
 
-    @Test
-    public void canRemoveElementFromArray() {
-        Boolean[] test = new Boolean[]{true, false, true, false};
-        assertArrayEquals(new Boolean[]{false, true, false}, id3.removeElement(0, test));
-    }
+//    @Test
+//    public void canRemoveElementFromArray() {
+//        Boolean[] test = new Boolean[]{true, false, true, false};
+//        assertArrayEquals(new Boolean[]{false, true, false}, id3.removeElement(0, test));
+//    }
 
     @Test
     public void canSplitOnFirst() {
-        Tuple<List<Boolean[]>, List<Boolean[]>> n = id3.split(spamSet, 0);
-        final String expectedLeft = "0 0 1\n" +
-                "1 0 0\n" +
+        Tuple<DataSet, DataSet> t = id3.split(spamSet, 0);
+        final String expectedLeft = "viagra learning\n" +
                 "0 1 1\n" +
-                "0 0 1\n" +
-                "0 0 1\n";
-        final String expectedRight = "0 1 1\n" +
                 "0 0 0\n" +
                 "0 0 0\n" +
                 "1 1 0\n" +
                 "0 0 0\n";
-        assertEquals(expectedLeft, ID3.convertSetToString(n.getLeft()));
-        assertEquals(expectedRight, ID3.convertSetToString(n.getRight()));
+        final String expectedRight = "viagra learning\n" +
+                "0 0 1\n" +
+                "1 0 0\n" +
+                "0 1 1\n" +
+                "0 0 1\n" +
+                "0 0 1\n";
+        assertEquals(expectedLeft, ID3.convertSetToString(t.getLeft()));
+        assertEquals(expectedRight, ID3.convertSetToString(t.getRight()));
     }
 
     @Test
     public void canSplitOnMiddle() {
-        Tuple<List<Boolean[]>, List<Boolean[]>> n = id3.split(spamSet, 1);
-        final String expectedLeft = "1 0 0\n" +
-                "0 1 0\n";
-        final String expectedRight = "1 0 1\n" +
+        Tuple<DataSet, DataSet> t = id3.split(spamSet, 1);
+        final String expectedLeft = "nigeria learning\n" +
+                "1 0 1\n" +
                 "0 1 1\n" +
                 "0 0 0\n" +
                 "0 0 0\n" +
@@ -109,69 +118,98 @@ public class ID3Test {
                 "1 0 1\n" +
                 "0 0 0\n" +
                 "1 0 1\n";
-        assertEquals(expectedLeft, ID3.convertSetToString(n.getLeft()));
-        assertEquals(expectedRight, ID3.convertSetToString(n.getRight()));
+        final String expectedRight = "nigeria learning\n" +
+                "1 0 0\n" +
+                "0 1 0\n";
+        assertEquals(expectedLeft, ID3.convertSetToString(t.getLeft()));
+        assertEquals(expectedRight, ID3.convertSetToString(t.getRight()));
     }
 
     @Test
     public void canSplitOnLast() {
-        Tuple<List<Boolean[]>, List<Boolean[]>> n = id3.split(spamSet, 2);
-        final String expectedLeft = "0 0 1\n" +
+        Tuple<DataSet, DataSet> t = id3.split(spamSet, 2);
+        final String expectedLeft = "nigeria viagra\n" +
                 "1 0 1\n" +
-                "0 1 0\n";
-        final String expectedRight = "1 0 1\n" +
                 "0 0 0\n" +
                 "1 1 0\n" +
                 "0 0 0\n" +
                 "1 0 1\n" +
                 "0 0 0\n" +
                 "1 0 1\n";
-        assertEquals(expectedLeft, ID3.convertSetToString(n.getLeft()));
-        assertEquals(expectedRight, ID3.convertSetToString(n.getRight()));
+        final String expectedRight = "nigeria viagra\n" +
+                "0 0 1\n" +
+                "1 0 1\n" +
+                "0 1 0\n";
+        assertEquals(expectedLeft, ID3.convertSetToString(t.getLeft()));
+        assertEquals(expectedRight, ID3.convertSetToString(t.getRight()));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void learnTree_throwsWhenNamesLenDoesNotMatchAttributeValueLen() {
+        List<String> attributeNames = Arrays.asList("a", "b");
+        List<List<Boolean>> observations = new LinkedList<>();
+        observations.add(Arrays.asList(true, true, true));
+        List<Boolean> labels = Collections.singletonList(true);
+        // There must exists an attribute name for each attribute.
+        id3.learnTree(attributeNames, observations, labels);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void learnTree_throwsWhenLabelsLenDoesNotMatchAttributeListLen() {
+        List<String> attributeNames = Arrays.asList("a", "b");
+        List<List<Boolean>> observations = new LinkedList<>();
+        observations.add(Arrays.asList(true, true));
+        observations.add(Arrays.asList(true, false));
+        List<Boolean> labels = Collections.singletonList(true);
+        // There must exists an attribute name for each attribute.
+        id3.learnTree(attributeNames, observations, labels);
     }
 
     @Test
     public void canLearnSimplePureTree() {
-        final String pureTest = "1 0 1\n" +
+        final String pureTest = "a b\n" +
+                "1 0 1\n" +
                 "0 0 1\n" +
                 "1 1 1\n" +
                 "0 0 1\n" +
                 "1 0 1\n" +
                 "0 0 1\n" +
                 "1 0 1\n";
-        ID3.Tree t1 = id3.learnTree(convertToSet("0 0"));
+        ID3.Tree t1 = id3.learnTree(convertToSet("a\n0 0"));
         assertTrue(t1.isLeafNode());
-        assertEquals(false, t1.getPredictedValue());
 
-        ID3.Tree t2 = id3.learnTree(convertToSet("0 0\n1 0\n1 0"));
+        assertEquals(false, t1.getPredictedValue().orElse(true));
+
+        ID3.Tree t2 = id3.learnTree(convertToSet("a\n0 0\n1 0\n1 0"));
         assertTrue(t2.isLeafNode());
-        assertEquals(false, t2.getPredictedValue());
+        assertEquals(false, t2.getPredictedValue().orElse(true));
 
-        ID3.Tree t3 = id3.learnTree(convertToSet("0 1\n1 1\n1 1"));
+        ID3.Tree t3 = id3.learnTree(convertToSet("a\n0 1\n1 1\n1 1"));
         assertTrue(t3.isLeafNode());
-        assertEquals(true, t3.getPredictedValue());
+        assertEquals(true, t3.getPredictedValue().orElse(false));
 
         ID3.Tree t4 = id3.learnTree(convertToSet(pureTest));
         assertTrue(t4.isLeafNode());
-        assertEquals(true, t4.getPredictedValue());
+        assertEquals(true, t4.getPredictedValue().orElse(false));
     }
 
     @Test
     public void canLearnSimpleImpureTree() {
-        final String pureTest = "1 0 1\n" +
+        final String pureTest = "a b\n" +
+                "1 0 1\n" +
                 "0 0 1\n" +
                 "1 1 1\n" +
                 "0 0 1\n" +
                 "1 0 1\n" +
                 "0 0 1\n" +
                 "1 0 0\n";
-        ID3.Tree t1 = id3.learnTree(convertToSet("0 0\n1 1"));
+        ID3.Tree t1 = id3.learnTree(convertToSet("a\n0 0\n1 1"));
         assertTrue(t1.isLeafNode());
-        assertEquals(true, t1.getPredictedValue());
+        assertEquals(true, t1.getPredictedValue().orElse(false));
 
         ID3.Tree t2 = id3.learnTree(convertToSet(pureTest));
         assertFalse(t2.isLeafNode());
-        assertNull(t2.getPredictedValue());
+        assertFalse(t2.getPredictedValue().isPresent());
     }
 
     @Test
@@ -185,12 +223,13 @@ public class ID3Test {
                 "0 0 0\n";
         ID3.Tree t = id3.learnTree(convertToSet(unsplittableTree));
         assertTrue(t.isLeafNode());
-        assertEquals(true, t.getPredictedValue());
+        assertEquals(true, t.getPredictedValue().orElse(false));
     }
 
     @Test
     public void learnTree_returnsLeafWhenGivenUnsplittable2() {
-        final String unsplittableTree = "0 0 1\n" +
+        final String unsplittableTree = "a b" +
+                "0 0 1\n" +
                 "0 0 1\n" +
                 "0 0 0\n" +
                 "1 1 0\n" +
@@ -199,29 +238,29 @@ public class ID3Test {
                 "1 1 0\n";
         ID3.Tree t = id3.learnTree(convertToSet(unsplittableTree));
         assertTrue(t.isLeafNode());
-        assertEquals(false, t.getPredictedValue());
+        assertEquals(false, t.getPredictedValue().orElse(true));
     }
 
-    @Test
-    public void learnTree_canLearnSpamExample() {
-        ID3.Tree t = id3.learnTree(spamSet);
-        //TODO: verify correctness of tree.
-    }
-
-    private static List<Boolean[]> convertToSet(String setData) {
+    private static DataSet convertToSet(String data) {
         final String whitespaceRegex = "\\s+";
-        List<Boolean[]> result = new LinkedList<>();
-        String[] lines = setData.split("\\n");
+        String[] lines = data.split("\\n");
+        List<List<Boolean>> observations = new LinkedList<>();
+        List<String> attributeNames = Arrays.asList(lines[0].split(whitespaceRegex));
+        List<Boolean> labels = new ArrayList<>(observations.size());
 
-        for (String line : lines) {
-            String[] words = line.split(whitespaceRegex);
-            Boolean[] row = new Boolean[words.length];
-            for (int i = 0; i < words.length; ++i) {
-                row[i] = words[i].equals("1");
+        for (int i = 1; i < lines.length; ++i) {
+            String[] rowValues = lines[i].split(whitespaceRegex);
+            labels.add(rowValues[rowValues.length - 1].equals("1"));
+
+            List<Boolean> attributeValues = new ArrayList<>(rowValues.length);
+
+            for (int j = 0; j < rowValues.length - 1; ++j) {
+                attributeValues.add(rowValues[j].equals("1"));
             }
-            result.add(row);
+
+            observations.add(attributeValues);
         }
 
-        return result;
+        return new DataSet(attributeNames, observations, labels);
     }
 }
