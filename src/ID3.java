@@ -52,7 +52,7 @@ public class ID3 {
         String usage = "The program requires two arguments that specify the path" +
                 " to the training and test data.\n" +
                 "For example:\n" +
-                "java ID3 \"/dataSet/train.dat\" \"/dataSet/test.dat\"";
+                "java ID3 \"/dataSet/train.dat\" \"/dataSet/extraWhiteSpace.dat\"";
         System.out.println(usage);
     }
 

@@ -30,7 +30,7 @@ public class ID3Test {
 
     @Test
     public void canCorrectlyParseFileWithExtraWhiteSpace() throws IOException {
-        final String dataFormatTest = "resources/dataFormatTest/test.dat";
+        final String dataFormatTest = "resources/dataFormatTest/extraWhiteSpace.dat";
         final String expected = "A B C\n" +
                 "0 0 0 0\n" +
                 "0 0 1 0\n" +
@@ -80,12 +80,6 @@ public class ID3Test {
     public void canDetermineIndexOfSplit() {
         assertEquals(0, id3.determineIndexOfSplit(spamSet.getObservations(), spamSet.getLabels()));
     }
-
-//    @Test
-//    public void canRemoveElementFromArray() {
-//        Boolean[] test = new Boolean[]{true, false, true, false};
-//        assertArrayEquals(new Boolean[]{false, true, false}, id3.removeElement(0, test));
-//    }
 
     @Test
     public void canSplitOnFirst() {
