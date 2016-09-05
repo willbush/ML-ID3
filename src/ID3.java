@@ -121,7 +121,7 @@ public class ID3 {
             return tree;
 
         final int indexOfSplit = determineIndexOfSplit(set.getObservations(), set.getLabels());
-        tree.setName(set.getAttributeNames().get(indexOfSplit));
+        tree.setAttributeName(set.getAttributeNames().get(indexOfSplit));
         Tuple<DataSet, DataSet> tuple = split(set, indexOfSplit);
         tree.setLeft(learnTree(tuple.getLeft()));
         tree.setRight(learnTree(tuple.getRight()));
@@ -242,40 +242,50 @@ public class ID3 {
 
     class Tree {
         private final boolean isLeafNode;
-        private Boolean predicatedValue;
+        private final Boolean predicatedValue;
         private Tree left;
         private Tree right;
-        private String name;
+        private String attributeName;
 
         Tree(DataSet set) {
-            isLeafNode = determineIsLeaf(set);
+            Tuple<Boolean, Boolean> t = determineIsLeaf(set);
+            isLeafNode = t.getLeft();
+            predicatedValue = t.getRight();
         }
 
-        private boolean determineIsLeaf(DataSet set) {
+        private Tuple<Boolean, Boolean> determineIsLeaf(DataSet set) {
+            final List<List<Boolean>> obs = set.getObservations();
+            final List<Boolean> labels = set.getLabels();
+
+            Boolean isPredicated = null;
             final boolean isLeaf;
-            final boolean initialValue = set.getLabels().get(0);
-            final boolean isPure = !set.getLabels().stream().anyMatch(b -> b != initialValue);
+            final boolean initialValue = labels.get(0);
+            final boolean isPure = !labels.stream().anyMatch(b -> b != initialValue);
 
             if (isPure) {
-                predicatedValue = initialValue;
+                isPredicated = initialValue;
                 isLeaf = true;
+            } else if (obs.isEmpty() || obs.get(0).isEmpty()) {
+                isLeaf = true;
+                isPredicated = getMajorityLabelValue(labels);
             } else {
-                final boolean isUnsplittable = !set.getObservations().parallelStream().anyMatch(this::isVaried);
+                final boolean initialObsValue = obs.get(0).get(0);
+                final boolean allObservationsAreEqual = !obs.stream().anyMatch(o -> isVaried(o, initialObsValue));
 
-                if (isUnsplittable) {
+                if (allObservationsAreEqual) {
                     isLeaf = true;
-                    predicatedValue = getMajorityLabelValue(set.getLabels());
+                    isPredicated = getMajorityLabelValue(labels);
                 } else {
                     isLeaf = false;
                 }
+
             }
-            return isLeaf;
+            return new Tuple<>(isLeaf, isPredicated);
         }
 
-        private boolean isVaried(List<Boolean> attributeValues) {
-            boolean initialAttributeValue = attributeValues.get(0);
+        private boolean isVaried(List<Boolean> attributeValues, boolean initialObsValue) {
             for (Boolean v : attributeValues)
-                if (v != initialAttributeValue)
+                if (v != initialObsValue)
                     return true;
 
             return false;
@@ -310,16 +320,49 @@ public class ID3 {
             return Optional.ofNullable(right);
         }
 
-        void setName(String name) {
-            this.name = name;
-        }
-
         void setLeft(Tree left) {
             this.left = left;
         }
 
         void setRight(Tree right) {
             this.right = right;
+        }
+
+        void setAttributeName(String attributeName) {
+            this.attributeName = attributeName;
+        }
+
+        Optional<String> getAttributeName() {
+            return Optional.ofNullable(attributeName);
+        }
+
+        String getTreeDiagram() {
+            return createDiagram(this, "");
+        }
+
+        private String createDiagram(Tree t, final String padding) {
+            String result;
+            if (t.isLeafNode()) {
+                final boolean isPredicated = t.getPredictedValue().orElseThrow(() -> new TreeException("Leaf node has no predicated value."));
+                result = isPredicated ? " 1" : " 0";
+                result += "\n";
+            } else {
+                result = padding.isEmpty() ? "" : "\n";
+                final String name = t.getAttributeName().orElseThrow(() -> new TreeException("Inner node has no attribute name"));
+                result += padding + name + " = 0 :";
+                Tree l = t.getLeft().orElseThrow(() -> new TreeException("Inner node has no left node."));
+                result += createDiagram(l, padding + "| ");
+                result += padding + name + " = 1 :";
+                Tree r = t.getRight().orElseThrow(() -> new TreeException("Inner node has no right node."));
+                result += createDiagram(r, padding + "| ");
+            }
+            return result;
+        }
+    }
+
+    private static class TreeException extends RuntimeException {
+        TreeException(String msg) {
+            super(msg);
         }
     }
 

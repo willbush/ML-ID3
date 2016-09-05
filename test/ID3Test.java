@@ -197,10 +197,6 @@ public class ID3Test {
                 "1 0 1\n" +
                 "0 0 1\n" +
                 "1 0 0\n";
-        ID3.Tree t1 = id3.learnTree(convertToSet("a\n0 0\n1 1"));
-        assertTrue(t1.isLeafNode());
-        assertEquals(true, t1.getPredictedValue().orElse(false));
-
         ID3.Tree t2 = id3.learnTree(convertToSet(pureTest));
         assertFalse(t2.isLeafNode());
         assertFalse(t2.getPredictedValue().isPresent());
@@ -221,7 +217,7 @@ public class ID3Test {
     }
 
     @Test
-    public void learnTree_returnsLeafWhenGivenUnsplittable2() {
+    public void learnTree_returnsNonLeafWhenAttributeValuesVaryByRowButNotColumn() {
         final String unsplittableTree = "a b" +
                 "0 0 1\n" +
                 "0 0 1\n" +
@@ -231,8 +227,21 @@ public class ID3Test {
                 "1 1 0\n" +
                 "1 1 0\n";
         ID3.Tree t = id3.learnTree(convertToSet(unsplittableTree));
-        assertTrue(t.isLeafNode());
-        assertEquals(false, t.getPredictedValue().orElse(true));
+        assertFalse(t.isLeafNode());
+    }
+
+    @Test
+    public void canPrintTree() {
+        ID3.Tree t = id3.learnTree(spamSet);
+        final String expectedDiagram = "nigeria = 0 :\n" +
+                "| learning = 0 : 0\n" +
+                "| learning = 1 :\n" +
+                "| | viagra = 0 : 1\n" +
+                "| | viagra = 1 : 0\n" +
+                "nigeria = 1 :\n" +
+                "| viagra = 0 : 1\n" +
+                "| viagra = 1 : 0\n";
+        assertEquals(expectedDiagram, t.getTreeDiagram());
     }
 
     private static DataSet convertToSet(String data) {
