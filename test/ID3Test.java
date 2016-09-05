@@ -245,10 +245,19 @@ public class ID3Test {
     }
 
     @Test
-    public void learnTree_canLearnDataSet1() throws IOException {
+    public void learnTree_canLearnTrainingSet1() throws IOException {
         final String trainPath = "resources/dataSet1/train.dat";
         ID3.Tree t = new ID3(Main.getSetFromFile(trainPath)).learnTree();
         System.out.println(t.getTreeDiagram());
+        //TODO: verify output;
+    }
+
+    @Test
+    public void learnTree_canLearnTrainingSet2() throws IOException {
+        final String trainPath = "resources/dataSet2/train2.dat";
+        ID3.Tree t = new ID3(Main.getSetFromFile(trainPath)).learnTree();
+        System.out.println(t.getTreeDiagram());
+        //TODO: verify output;
     }
 
     private static DataSet convertToSet(String data) {

@@ -177,26 +177,32 @@ class ID3 {
 
             Boolean isPredicated = null;
             final boolean isLeaf;
-            final boolean initialValue = labels.get(0);
-            final boolean isPure = !labels.stream().anyMatch(b -> b != initialValue);
 
-            if (isPure) {
-                isPredicated = initialValue;
+            if (labels.isEmpty()) {
+                isPredicated = majorityLabelOfEntireSet;
                 isLeaf = true;
-            } else if (obs.isEmpty() || obs.get(0).isEmpty()) {
-                isLeaf = true;
-                isPredicated = getMajorityLabelValue(labels);
             } else {
-                final boolean initialObsValue = obs.get(0).get(0);
-                final boolean allObservationsAreEqual = !obs.stream().anyMatch(o -> isVaried(o, initialObsValue));
+                final boolean initialValue = labels.get(0);
+                final boolean isPure = !labels.stream().anyMatch(b -> b != initialValue);
 
-                if (allObservationsAreEqual) {
+                if (isPure) {
+                    isPredicated = initialValue;
+                    isLeaf = true;
+                } else if (obs.isEmpty() || obs.get(0).isEmpty()) {
                     isLeaf = true;
                     isPredicated = getMajorityLabelValue(labels);
                 } else {
-                    isLeaf = false;
-                }
+                    final boolean initialObsValue = obs.get(0).get(0);
+                    final boolean allObservationsAreEqual = !obs.stream().anyMatch(o -> isVaried(o, initialObsValue));
 
+                    if (allObservationsAreEqual) {
+                        isLeaf = true;
+                        isPredicated = getMajorityLabelValue(labels);
+                    } else {
+                        isLeaf = false;
+                    }
+
+                }
             }
             return new Tuple<>(isLeaf, isPredicated);
         }
