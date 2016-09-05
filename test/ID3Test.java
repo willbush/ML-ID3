@@ -49,9 +49,11 @@ public class ID3Test {
 
     @Test
     public void canCalculateEntropy() {
+        // pure nodes (i.e. all class labels have same value) have no entropy
         assertEquals(0.0, ID3.calcEntropy(0, 5), 0.01);
         assertEquals(0.0, ID3.calcEntropy(5, 0), 0.01);
 
+        // even split of class labels have max entropy (1.0)
         assertEquals(1.0, ID3.calcEntropy(2, 2), 0.001);
 
         assertEquals(0.59, ID3.calcEntropy(1, 6), 0.01);
@@ -258,6 +260,52 @@ public class ID3Test {
         ID3.Tree t = new ID3(Main.getSetFromFile(trainPath)).learnTree();
         System.out.println(t.getTreeDiagram());
         //TODO: verify output;
+    }
+
+    @Test
+    public void learnTree_canLearnBooleanFunction1() {
+        // boolean function: (~A + B) * ~(C * A)
+        final String trainingSet = "A B C\n" +
+                "0 0 0 1\n" +
+                "0 0 1 1\n" +
+                "0 1 0 1\n" +
+                "0 1 1 1\n" +
+                "1 0 0 0\n" +
+                "1 0 1 0\n" +
+                "1 1 0 1\n" +
+                "1 1 1 0\n";
+        final String expectedDiagram = "A = 0 : 1\n" +
+                "A = 1 :\n" +
+                "| B = 0 : 0\n" +
+                "| B = 1 :\n" +
+                "| | C = 0 : 1\n" +
+                "| | C = 1 : 0\n";
+        ID3.Tree t = new ID3(convertToSet(trainingSet)).learnTree();
+        assertEquals(expectedDiagram, t.getTreeDiagram());
+    }
+
+    @Test
+    public void learnTree_canLearnBooleanFunction2() {
+        // boolean function: (A XOR B) * C
+        final String trainingSet = "A B C\n" +
+                "0 0 0 0\n" +
+                "0 0 1 0\n" +
+                "0 1 0 0\n" +
+                "0 1 1 1\n" +
+                "1 0 0 0\n" +
+                "1 0 1 1\n" +
+                "1 1 0 0\n" +
+                "1 1 1 0\n";
+        final String expectedDiagram = "C = 0 : 0\n" +
+                "C = 1 :\n" +
+                "| A = 0 :\n" +
+                "| | B = 0 : 0\n" +
+                "| | B = 1 : 1\n" +
+                "| A = 1 :\n" +
+                "| | B = 0 : 1\n" +
+                "| | B = 1 : 0\n";
+        ID3.Tree t = new ID3(convertToSet(trainingSet)).learnTree();
+        assertEquals(expectedDiagram, t.getTreeDiagram());
     }
 
     private static DataSet convertToSet(String data) {
