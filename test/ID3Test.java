@@ -1,5 +1,6 @@
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -170,20 +171,20 @@ public class ID3Test {
                 "1 0 1\n" +
                 "0 0 1\n" +
                 "1 0 1\n";
-        ID3.Tree t1 = new ID3(convertToSet("a\n0 0")).learnTree();
+        ID3.Tree t1 = new ID3(convertToSet("a\n0 0")).getTree();
         assertTrue(t1.isLeafNode());
 
         assertEquals(false, t1.getPredictedValue().orElse(true));
 
-        ID3.Tree t2 = new ID3(convertToSet("a\n0 0\n1 0\n1 0")).learnTree();
+        ID3.Tree t2 = new ID3(convertToSet("a\n0 0\n1 0\n1 0")).getTree();
         assertTrue(t2.isLeafNode());
         assertEquals(false, t2.getPredictedValue().orElse(true));
 
-        ID3.Tree t3 = new ID3(convertToSet("a\n0 1\n1 1\n1 1")).learnTree();
+        ID3.Tree t3 = new ID3(convertToSet("a\n0 1\n1 1\n1 1")).getTree();
         assertTrue(t3.isLeafNode());
         assertEquals(true, t3.getPredictedValue().orElse(false));
 
-        ID3.Tree t4 = new ID3(convertToSet(pureTest)).learnTree();
+        ID3.Tree t4 = new ID3(convertToSet(pureTest)).getTree();
         assertTrue(t4.isLeafNode());
         assertEquals(true, t4.getPredictedValue().orElse(false));
     }
@@ -198,7 +199,7 @@ public class ID3Test {
                 "1 0 1\n" +
                 "0 0 1\n" +
                 "1 0 0\n";
-        ID3.Tree t2 = new ID3(convertToSet(pureTest)).learnTree();
+        ID3.Tree t2 = new ID3(convertToSet(pureTest)).getTree();
         assertFalse(t2.isLeafNode());
         assertFalse(t2.getPredictedValue().isPresent());
     }
@@ -213,7 +214,7 @@ public class ID3Test {
                 "0 0 1\n" +
                 "0 0 1\n" +
                 "0 0 0\n";
-        ID3.Tree t = new ID3(convertToSet(unsplittableTree)).learnTree();
+        ID3.Tree t = new ID3(convertToSet(unsplittableTree)).getTree();
         assertTrue(t.isLeafNode());
         assertEquals(true, t.getPredictedValue().orElse(false));
     }
@@ -228,38 +229,65 @@ public class ID3Test {
                 "0 0 0\n" +
                 "1 1 0\n" +
                 "1 1 0\n";
-        ID3.Tree t = new ID3(convertToSet(unsplittableTree)).learnTree();
+        ID3.Tree t = new ID3(convertToSet(unsplittableTree)).getTree();
         assertFalse(t.isLeafNode());
     }
 
     @Test
     public void canPrintTree() {
-        ID3.Tree t = new ID3(spamSet).learnTree();
+        ID3.Tree t = new ID3(spamSet).getTree();
         final String expectedDiagram = "nigeria = 0 :\n" +
-                "| learning = 0 : 0\n" +
+                "| learning = 0 :  0\n" +
                 "| learning = 1 :\n" +
-                "| | viagra = 0 : 1\n" +
-                "| | viagra = 1 : 0\n" +
+                "| | viagra = 0 :  1\n" +
+                "| | viagra = 1 :  0\n" +
                 "nigeria = 1 :\n" +
-                "| viagra = 0 : 1\n" +
-                "| viagra = 1 : 0\n";
+                "| viagra = 0 :  1\n" +
+                "| viagra = 1 :  0\n";
         assertEquals(expectedDiagram, t.getTreeDiagram());
     }
 
     @Test
     public void learnTree_canLearnTrainingSet1() throws IOException {
         final String trainPath = "resources/dataSet1/train.dat";
-        ID3.Tree t = new ID3(Main.getSetFromFile(trainPath)).learnTree();
-        System.out.println(t.getTreeDiagram());
-        //TODO: verify output;
+        final String testPath = "resources/dataSet1/test.dat";
+        final String treePath = "resources/dataSet1/tree.txt";
+        String expected = new Scanner(new File(treePath)).useDelimiter("\\Z").next();
+
+        DataSet trainSet = Main.getSetFromFile(trainPath);
+        DataSet testSet = Main.getSetFromFile(testPath);
+        ID3.Tree t = new ID3(trainSet).getTree();
+
+        double trainAcc = ID3.getAccuracyPercent(t, trainSet);
+        double testAcc = ID3.getAccuracyPercent(t, testSet);
+
+        String actual = t.getTreeDiagram();
+        actual += String.format("\nAccuracy on training set (%d instances):  %.1f%%\n", trainSet.getLabels().size(), trainAcc);
+        actual += String.format("\nAccuracy on test set (%s instances):  %.1f%%\n", testSet.getLabels().size(), testAcc);
+        assertEquals(expected, actual);
     }
 
     @Test
     public void learnTree_canLearnTrainingSet2() throws IOException {
         final String trainPath = "resources/dataSet2/train2.dat";
-        ID3.Tree t = new ID3(Main.getSetFromFile(trainPath)).learnTree();
-        System.out.println(t.getTreeDiagram());
-        //TODO: verify output;
+        final String testPath = "resources/dataSet2/test2.dat";
+        final String treePath = "resources/dataSet2/tree2.txt";
+        String expected = new Scanner(new File(treePath)).useDelimiter("\\Z").next();
+
+        DataSet trainSet = Main.getSetFromFile(trainPath);
+        DataSet testSet = Main.getSetFromFile(testPath);
+        ID3.Tree t = new ID3(trainSet).getTree();
+
+        double trainAcc = ID3.getAccuracyPercent(t, trainSet);
+        double testAcc = ID3.getAccuracyPercent(t, testSet);
+
+        String actual = t.getTreeDiagram();
+        actual += String.format("\nAccuracy on training set (%d instances):  %.1f%%\n", trainSet.getLabels().size(), trainAcc);
+        actual += String.format("\nAccuracy on test set (%s instances):  %.1f%%\n", testSet.getLabels().size(), testAcc);
+
+        System.out.println(expected);
+        System.out.println(actual);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -274,13 +302,13 @@ public class ID3Test {
                 "1 0 1 0\n" +
                 "1 1 0 1\n" +
                 "1 1 1 0\n";
-        final String expectedDiagram = "A = 0 : 1\n" +
+        final String expectedDiagram = "A = 0 :  1\n" +
                 "A = 1 :\n" +
-                "| B = 0 : 0\n" +
+                "| B = 0 :  0\n" +
                 "| B = 1 :\n" +
-                "| | C = 0 : 1\n" +
-                "| | C = 1 : 0\n";
-        ID3.Tree t = new ID3(convertToSet(trainingSet)).learnTree();
+                "| | C = 0 :  1\n" +
+                "| | C = 1 :  0\n";
+        ID3.Tree t = new ID3(convertToSet(trainingSet)).getTree();
         assertEquals(expectedDiagram, t.getTreeDiagram());
     }
 
@@ -296,15 +324,15 @@ public class ID3Test {
                 "1 0 1 1\n" +
                 "1 1 0 0\n" +
                 "1 1 1 0\n";
-        final String expectedDiagram = "C = 0 : 0\n" +
+        final String expectedDiagram = "C = 0 :  0\n" +
                 "C = 1 :\n" +
                 "| A = 0 :\n" +
-                "| | B = 0 : 0\n" +
-                "| | B = 1 : 1\n" +
+                "| | B = 0 :  0\n" +
+                "| | B = 1 :  1\n" +
                 "| A = 1 :\n" +
-                "| | B = 0 : 1\n" +
-                "| | B = 1 : 0\n";
-        ID3.Tree t = new ID3(convertToSet(trainingSet)).learnTree();
+                "| | B = 0 :  1\n" +
+                "| | B = 1 :  0\n";
+        ID3.Tree t = new ID3(convertToSet(trainingSet)).getTree();
         assertEquals(expectedDiagram, t.getTreeDiagram());
     }
 

@@ -2,8 +2,8 @@ import java.io.IOException;
 import java.util.*;
 
 class ID3 {
-    private final DataSet dataSet;
     private final boolean majorityLabelOfEntireSet;
+    private final Tree tree;
 
     ID3(DataSet dataSet) {
         if (dataSet.getAttributeNames().size() != dataSet.getObservations().get(0).size())
@@ -11,12 +11,8 @@ class ID3 {
         if (dataSet.getLabels().size() != dataSet.getObservations().size())
             throw new IllegalArgumentException("There must exists a label for each observation.");
 
-        this.dataSet = dataSet;
         majorityLabelOfEntireSet = getMajorityLabelValue(dataSet.getLabels());
-    }
-
-    Tree learnTree() {
-        return learnTree(dataSet);
+        tree = learnTree(dataSet);
     }
 
     private Tree learnTree(DataSet set) {
@@ -27,6 +23,7 @@ class ID3 {
 
         final int indexOfSplit = determineIndexOfSplit(set.getObservations(), set.getLabels());
         tree.setAttributeName(set.getAttributeNames().get(indexOfSplit));
+        tree.setAttributeIndex(indexOfSplit);
         Tuple<DataSet, DataSet> tuple = split(set, indexOfSplit);
         tree.setLeft(learnTree(tuple.getLeft()));
         tree.setRight(learnTree(tuple.getRight()));
@@ -145,6 +142,10 @@ class ID3 {
         return Collections.unmodifiableList(result);
     }
 
+    Tree getTree() {
+        return tree;
+    }
+
     private Boolean getMajorityLabelValue(List<Boolean> labels) {
         int trueCount = 0;
         int falseCount = 0;
@@ -155,7 +156,51 @@ class ID3 {
             else
                 falseCount += 1;
         }
-        return trueCount >= falseCount; // returns true if no majority
+        if (trueCount == falseCount)
+            return majorityLabelOfEntireSet;
+
+        return trueCount > falseCount;
+    }
+
+    static double getAccuracyPercent(Tree t, DataSet testSet) {
+        int hitCount = 0;
+        int labelIndex = 0;
+
+        for (List<Boolean> obs : testSet.getObservations())
+            if (isHit(t, obs, testSet.getLabels().get(labelIndex++)))
+                hitCount++;
+
+        return (double) hitCount / testSet.getLabels().size() * 100;
+    }
+
+    private static boolean isHit(Tree t, List<Boolean> obs, Boolean expectedLabel) {
+        if (t.isLeafNode)
+            return t.predicatedValue == expectedLabel;
+        else {
+            final int attributeIndex = t.getAttributeIndex().orElseThrow(
+                    () -> new TreeException("Non leaf node has no attribute index."));
+            return isHit(t, obs, attributeIndex, expectedLabel);
+        }
+    }
+
+    private static boolean isHit(Tree t, List<Boolean> obs, int attributeIndex, Boolean expectedLabel) {
+        if (t.isLeafNode)
+            return t.predicatedValue == expectedLabel;
+        else {
+            final String nodeError = "Non leaf node missing";
+
+            if (obs.get(attributeIndex)) {
+                Tree right = t.getRight().orElseThrow(() -> new TreeException(nodeError + " right branch"));
+                final int i = right.getAttributeIndex().orElseThrow(() -> new TreeException(nodeError + " attribute index."));
+                obs.remove(attributeIndex);
+                return isHit(right, obs, i, expectedLabel);
+            } else {
+                Tree left = t.getLeft().orElseThrow(() -> new TreeException(nodeError + " left branch"));
+                final int i = left.getAttributeIndex().orElseThrow(() -> new TreeException(nodeError + " attribute index."));
+                obs.remove(attributeIndex);
+                return isHit(left, obs, i, expectedLabel);
+            }
+        }
     }
 
     class Tree {
@@ -164,6 +209,7 @@ class ID3 {
         private Tree left;
         private Tree right;
         private String attributeName;
+        private int attributeIndex;
 
         Tree(DataSet set) {
             Tuple<Boolean, Boolean> t = determineIsLeaf(set);
@@ -192,8 +238,8 @@ class ID3 {
                     isLeaf = true;
                     isPredicated = getMajorityLabelValue(labels);
                 } else {
-                    final boolean initialObsValue = obs.get(0).get(0);
-                    final boolean allObservationsAreEqual = !obs.stream().anyMatch(o -> isVaried(o, initialObsValue));
+                    final List<Boolean> initialObs = obs.get(0);
+                    final boolean allObservationsAreEqual = !obs.stream().anyMatch(o -> !listsAreEqual(initialObs, o));
 
                     if (allObservationsAreEqual) {
                         isLeaf = true;
@@ -207,12 +253,17 @@ class ID3 {
             return new Tuple<>(isLeaf, isPredicated);
         }
 
-        private boolean isVaried(List<Boolean> attributeValues, boolean initialObsValue) {
-            for (Boolean v : attributeValues)
-                if (v != initialObsValue)
-                    return true;
+        private boolean listsAreEqual(List<Boolean> listA, List<Boolean> listB) {
+            Iterator<Boolean> itA = listA.iterator();
+            Iterator<Boolean> itB = listB.iterator();
 
-            return false;
+            while (itA.hasNext() && itB.hasNext()) {
+                Boolean a = itA.next();
+                Boolean b = itB.next();
+                if (a != b)
+                    return false;
+            }
+            return true;
         }
 
         boolean isLeafNode() {
@@ -247,6 +298,14 @@ class ID3 {
             return Optional.ofNullable(attributeName);
         }
 
+        Optional<Integer> getAttributeIndex() {
+            return Optional.ofNullable(attributeIndex);
+        }
+
+        void setAttributeIndex(int attributeIndex) {
+            this.attributeIndex = attributeIndex;
+        }
+
         String getTreeDiagram() {
             return createDiagram(this, "");
         }
@@ -255,7 +314,7 @@ class ID3 {
             String result;
             if (t.isLeafNode()) {
                 final boolean isPredicated = t.getPredictedValue().orElseThrow(() -> new TreeException("Leaf node has no predicated value."));
-                result = isPredicated ? " 1" : " 0";
+                result = isPredicated ? "  1" : "  0";
                 result += "\n";
             } else {
                 result = padding.isEmpty() ? "" : "\n";
