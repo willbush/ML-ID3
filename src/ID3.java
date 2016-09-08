@@ -162,13 +162,15 @@ class ID3 {
         return trueCount > falseCount;
     }
 
-    static double getAccuracyPercent(Tree t, DataSet testSet) {
+    private static double getAccuracyPercent(Tree t, DataSet testSet) {
         int hitCount = 0;
         int labelIndex = 0;
 
-        for (List<Boolean> obs : testSet.getObservations())
+        for (List<Boolean> obs : testSet.getObservations()) {
+
             if (isHit(t, obs, testSet.getLabels().get(labelIndex++)))
                 hitCount++;
+        }
 
         return (double) hitCount / testSet.getLabels().size() * 100;
     }
@@ -203,6 +205,17 @@ class ID3 {
         }
     }
 
+    static String getAccuracyResults(Tree t, DataSet trainSet, DataSet testSet) {
+        final double trainAcc = ID3.getAccuracyPercent(t, trainSet);
+        final double testAcc = ID3.getAccuracyPercent(t, testSet);
+        final String trainFormat = "\nAccuracy on training set (%d instances):  %.1f%%\n";
+        final String testFormat = "\nAccuracy on test set (%s instances):  %.1f%%\n";
+
+        final String trainAccResult = String.format(trainFormat, trainSet.getLabels().size(), trainAcc);
+        final String testAccResult = String.format(testFormat, testSet.getLabels().size(), testAcc);
+        return trainAccResult + testAccResult;
+    }
+
     class Tree {
         private final boolean isLeafNode;
         private final Boolean predicatedValue;
@@ -224,31 +237,21 @@ class ID3 {
             Boolean isPredicated = null;
             final boolean isLeaf;
 
-            if (labels.isEmpty()) {
-                isPredicated = majorityLabelOfEntireSet;
+            final boolean initialValue = labels.get(0);
+            final List<Boolean> initialObs = obs.get(0);
+            final boolean isPure = !labels.stream().anyMatch(b -> b != initialValue);
+
+            if (isPure) {
+                isPredicated = initialValue;
                 isLeaf = true;
+            } else if (initialObs.isEmpty()) {
+                isLeaf = true;
+                isPredicated = getMajorityLabelValue(labels);
+            } else if (!obs.stream().anyMatch(o -> !listsAreEqual(initialObs, o))) {
+                isLeaf = true;
+                isPredicated = getMajorityLabelValue(labels);
             } else {
-                final boolean initialValue = labels.get(0);
-                final boolean isPure = !labels.stream().anyMatch(b -> b != initialValue);
-
-                if (isPure) {
-                    isPredicated = initialValue;
-                    isLeaf = true;
-                } else if (obs.isEmpty() || obs.get(0).isEmpty()) {
-                    isLeaf = true;
-                    isPredicated = getMajorityLabelValue(labels);
-                } else {
-                    final List<Boolean> initialObs = obs.get(0);
-                    final boolean allObservationsAreEqual = !obs.stream().anyMatch(o -> !listsAreEqual(initialObs, o));
-
-                    if (allObservationsAreEqual) {
-                        isLeaf = true;
-                        isPredicated = getMajorityLabelValue(labels);
-                    } else {
-                        isLeaf = false;
-                    }
-
-                }
+                isLeaf = false;
             }
             return new Tuple<>(isLeaf, isPredicated);
         }

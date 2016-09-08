@@ -258,13 +258,9 @@ public class ID3Test {
         DataSet testSet = Main.getSetFromFile(testPath);
         ID3.Tree t = new ID3(trainSet).getTree();
 
-        double trainAcc = ID3.getAccuracyPercent(t, trainSet);
-        double testAcc = ID3.getAccuracyPercent(t, testSet);
-
-        String actual = t.getTreeDiagram();
-        actual += String.format("\nAccuracy on training set (%d instances):  %.1f%%\n", trainSet.getLabels().size(), trainAcc);
-        actual += String.format("\nAccuracy on test set (%s instances):  %.1f%%\n", testSet.getLabels().size(), testAcc);
-        assertEquals(expected, actual);
+        String treeDiagram = t.getTreeDiagram();
+        String accuracyResult = ID3.getAccuracyResults(t, trainSet, testSet);
+        assertEquals(expected, treeDiagram + accuracyResult);
     }
 
     @Test
@@ -278,16 +274,9 @@ public class ID3Test {
         DataSet testSet = Main.getSetFromFile(testPath);
         ID3.Tree t = new ID3(trainSet).getTree();
 
-        double trainAcc = ID3.getAccuracyPercent(t, trainSet);
-        double testAcc = ID3.getAccuracyPercent(t, testSet);
-
-        String actual = t.getTreeDiagram();
-        actual += String.format("\nAccuracy on training set (%d instances):  %.1f%%\n", trainSet.getLabels().size(), trainAcc);
-        actual += String.format("\nAccuracy on test set (%s instances):  %.1f%%\n", testSet.getLabels().size(), testAcc);
-
-        System.out.println(expected);
-        System.out.println(actual);
-        assertEquals(expected, actual);
+        String treeDiagram = t.getTreeDiagram();
+        String accuracyResult = ID3.getAccuracyResults(t, trainSet, testSet);
+        assertEquals(expected, treeDiagram + accuracyResult);
     }
 
     @Test
@@ -355,7 +344,6 @@ public class ID3Test {
 
             observations.add(attributeValues);
         }
-
         return new DataSet(attributeNames, observations, labels);
     }
 }

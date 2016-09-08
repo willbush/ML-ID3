@@ -10,11 +10,16 @@ public class Main {
     public static void main(String[] args) {
         if (args.length != 2) {
             printProgramUsage();
+            System.exit(1);
         }
 
         try {
-            System.out.println(getSetFromFileAsString(args[0]));
-            System.out.println(getSetFromFileAsString(args[1]));
+            DataSet trainSet = Main.getSetFromFile(args[0]);
+            DataSet testSet = Main.getSetFromFile(args[1]);
+            ID3.Tree t = new ID3(trainSet).getTree();
+
+            System.out.println(t.getTreeDiagram());
+            System.out.println(ID3.getAccuracyResults(t, trainSet, testSet));
         } catch (Exception e) {
             e.printStackTrace();
         }
