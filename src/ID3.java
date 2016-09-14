@@ -321,22 +321,22 @@ class ID3 {
             final List<List<Boolean>> obs = set.getObservations();
             final List<Boolean> labels = set.getLabels();
 
-            Boolean isPredicated = null;
+            Boolean isPredicted = null;
             final boolean isLeaf;
             final boolean initialValue = labels.get(0);
             // "pure" means all class labels are the same value.
             final boolean isPure = !labels.stream().anyMatch(b -> b != initialValue);
 
             if (isPure) {
-                isPredicated = initialValue;
+                isPredicted = initialValue;
                 isLeaf = true;
             } else if (isUnsplittable(obs)) {
                 isLeaf = true;
-                isPredicated = getMajorityLabelValue(labels);
+                isPredicted = getMajorityLabelValue(labels);
             } else {
                 isLeaf = false;
             }
-            return new Tuple<>(isLeaf, isPredicated);
+            return new Tuple<>(isLeaf, isPredicted);
         }
 
         /**
@@ -418,8 +418,8 @@ class ID3 {
         private String createDiagram(Tree t, final String padding) {
             String result;
             if (t.isLeafNode()) {
-                final boolean isPredicated = t.getPredictedValue().orElseThrow(() -> new TreeException("Leaf node has no predicted value."));
-                result = isPredicated ? "  1" : "  0";
+                final boolean isPredicted = t.getPredictedValue().orElseThrow(() -> new TreeException("Leaf node has no predicted value."));
+                result = isPredicted ? "  1" : "  0";
                 result += "\n";
             } else {
                 result = padding.isEmpty() ? "" : "\n";
