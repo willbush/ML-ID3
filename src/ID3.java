@@ -252,7 +252,7 @@ class ID3 {
 
     private static boolean isHit(Tree t, List<Boolean> obs, Boolean expectedLabel) {
         if (t.isLeafNode)
-            return t.predicatedValue == expectedLabel;
+            return t.predictedValue == expectedLabel;
         else {
             final int attributeIndex = t.getAttributeIndex().orElseThrow(
                     () -> new TreeException("Non leaf node has no attribute index."));
@@ -262,7 +262,7 @@ class ID3 {
 
     private static boolean isHit(Tree t, List<Boolean> obs, int attributeIndex, Boolean expectedLabel) {
         if (t.isLeafNode)
-            return t.predicatedValue == expectedLabel;
+            return t.predictedValue == expectedLabel;
         else {
             final String nodeError = "Non leaf node missing";
 
@@ -296,8 +296,8 @@ class ID3 {
      */
     class Tree {
         private final boolean isLeafNode;
-        // Tree only has a predicated value if it is a leaf node.
-        private final Boolean predicatedValue;
+        // Tree only has a predicted value if it is a leaf node.
+        private final Boolean predictedValue;
         // Tree only has left or right nodes if it is inner node.
         private Tree left;
         private Tree right;
@@ -308,14 +308,14 @@ class ID3 {
         Tree(DataSet set) {
             Tuple<Boolean, Boolean> t = determineIsLeaf(set);
             isLeafNode = t.getLeft();
-            predicatedValue = t.getRight();
+            predictedValue = t.getRight();
         }
 
         /**
          * Determines the base case for the learn tree recursive calls.
          *
          * @param set data set.
-         * @return left value is if this tree is a leaf and right value is the predicated value
+         * @return left value is if this tree is a leaf and right value is the predicted value
          */
         private Tuple<Boolean, Boolean> determineIsLeaf(DataSet set) {
             final List<List<Boolean>> obs = set.getObservations();
@@ -369,7 +369,7 @@ class ID3 {
         }
 
         Optional<Boolean> getPredictedValue() {
-            return Optional.ofNullable(predicatedValue);
+            return Optional.ofNullable(predictedValue);
         }
 
         Optional<Tree> getLeft() {
@@ -418,7 +418,7 @@ class ID3 {
         private String createDiagram(Tree t, final String padding) {
             String result;
             if (t.isLeafNode()) {
-                final boolean isPredicated = t.getPredictedValue().orElseThrow(() -> new TreeException("Leaf node has no predicated value."));
+                final boolean isPredicated = t.getPredictedValue().orElseThrow(() -> new TreeException("Leaf node has no predicted value."));
                 result = isPredicated ? "  1" : "  0";
                 result += "\n";
             } else {
