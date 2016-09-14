@@ -8,6 +8,9 @@ import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * This file exercises the functionality of the ID3 algorithm through unit tests.
+ */
 public class ID3Test {
     private static final String SPAM_EXAMPLE = "nigeria viagra learning\n" +
             "1 0 0 1\n" +
@@ -22,10 +25,10 @@ public class ID3Test {
             "1 0 0 1\n";
     private static DataSet spamSet = convertToSet(SPAM_EXAMPLE);
 
-    @Test(expected = ID3.EmptyFileException.class)
+    @Test(expected = DataSet.EmptyFileException.class)
     public void canThrowIfGivenEmptyFile() throws IOException {
         final String emptyFileTest = "resources/dataFormatTest/emptyFile.dat";
-        Main.getSetFromFileAsString(emptyFileTest);
+        DataSet.fromFile(emptyFileTest);
     }
 
     @Test
@@ -40,12 +43,12 @@ public class ID3Test {
                 "1 0 1 0\n" +
                 "1 1 0 0\n" +
                 "1 1 1 1\n";
-        assertEquals(expected, Main.getSetFromFileAsString(dataFormatTest));
+        assertEquals(expected, DataSet.fromFile(dataFormatTest).toString());
     }
 
     @Test
     public void canGetWhatWasGiven() {
-        assertEquals(SPAM_EXAMPLE, Main.convertSetToString(spamSet));
+        assertEquals(SPAM_EXAMPLE, spamSet.toString());
     }
 
     @Test
@@ -98,8 +101,8 @@ public class ID3Test {
                 "0 1 1\n" +
                 "0 0 1\n" +
                 "0 0 1\n";
-        assertEquals(expectedLeft, Main.convertSetToString(t.getLeft()));
-        assertEquals(expectedRight, Main.convertSetToString(t.getRight()));
+        assertEquals(expectedLeft, t.getLeft().toString());
+        assertEquals(expectedRight, t.getRight().toString());
     }
 
     @Test
@@ -117,8 +120,8 @@ public class ID3Test {
         final String expectedRight = "nigeria learning\n" +
                 "1 0 0\n" +
                 "0 1 0\n";
-        assertEquals(expectedLeft, Main.convertSetToString(t.getLeft()));
-        assertEquals(expectedRight, Main.convertSetToString(t.getRight()));
+        assertEquals(expectedLeft, t.getLeft().toString());
+        assertEquals(expectedRight, t.getRight().toString());
     }
 
     @Test
@@ -136,8 +139,8 @@ public class ID3Test {
                 "0 0 1\n" +
                 "1 0 1\n" +
                 "0 1 0\n";
-        assertEquals(expectedLeft, Main.convertSetToString(t.getLeft()));
-        assertEquals(expectedRight, Main.convertSetToString(t.getRight()));
+        assertEquals(expectedLeft, t.getLeft().toString());
+        assertEquals(expectedRight, t.getRight().toString());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -254,8 +257,8 @@ public class ID3Test {
         final String treePath = "resources/dataSet1/tree.txt";
         String expected = new Scanner(new File(treePath)).useDelimiter("\\Z").next();
 
-        DataSet trainSet = Main.getSetFromFile(trainPath);
-        DataSet testSet = Main.getSetFromFile(testPath);
+        DataSet trainSet = DataSet.fromFile(trainPath);
+        DataSet testSet = DataSet.fromFile(testPath);
         ID3.Tree t = new ID3(trainSet).getTree();
 
         String treeDiagram = t.getTreeDiagram();
@@ -270,8 +273,8 @@ public class ID3Test {
         final String treePath = "resources/dataSet2/tree2.txt";
         String expected = new Scanner(new File(treePath)).useDelimiter("\\Z").next();
 
-        DataSet trainSet = Main.getSetFromFile(trainPath);
-        DataSet testSet = Main.getSetFromFile(testPath);
+        DataSet trainSet = DataSet.fromFile(trainPath);
+        DataSet testSet = DataSet.fromFile(testPath);
         ID3.Tree t = new ID3(trainSet).getTree();
 
         String treeDiagram = t.getTreeDiagram();

@@ -1,20 +1,81 @@
-import java.io.IOException;
 import java.util.*;
+
+//@formatter:off
+/**
+ * Iterative Dichotomiser 3 (ID3) is a learning algorithm which builds decision trees. This implementation only handles
+ * binary classification tasks and does not implement pruning.
+ *
+ * How ID3 works is best explained with an example. Consider the boolean function: (A XOR B) AND C.
+ * The un-parsed training data for its truth table would look like this:
+ *
+ *   A B C class
+ *   0 0 0 0
+ *   0 0 1 0
+ *   0 1 0 0
+ *   0 1 1 1
+ *   1 0 0 0
+ *   1 0 1 1
+ *   1 1 0 0
+ *   1 1 1 0
+ *
+ * Where A, B, C are inputs to the function and "class" is the class label, which is the output of the function.
+ * The ID3 program is expected to print the following decision tree on the left. On the right is my attempt to draw
+ * the decision tree where you go down a left branch on 0 (or false) and right branch for 1 (or true).
+ *
+ *   C = 0 :  0                         C
+ *   C = 1 :                           / \
+ *   | A = 0 :                        0  A
+ *   | | B = 0 :  0                     / \
+ *   | | B = 1 :  1                    B   B
+ *   | A = 1 :                        /\   /\
+ *   | | B = 0 :  1                  0 1  1 0
+ *   | | B = 1 :  0
+ *
+ * But why does the root start with C? The root starts with C because C gives the most information of the 3 variables
+ * about whether the output will be true or false. If C is false, then we're done the output of the function is false.
+ * The ID3 algorithm calculates information gain by calculating entropy, and splits based on the attribute with the
+ * most information gain. For more information please see the following link.
+ *
+ * @see <a href="https://en.wikipedia.org/wiki/ID3_algorithm">ID3 on wikipedia</a>
+ */
+//@formatter:on
 
 class ID3 {
     private final boolean majorityLabelOfEntireSet;
     private final Tree tree;
 
     ID3(DataSet dataSet) {
-        if (dataSet.getAttributeNames().size() != dataSet.getObservations().get(0).size())
-            throw new IllegalArgumentException("There must exist an attribute name for each attribute.");
-        if (dataSet.getLabels().size() != dataSet.getObservations().size())
-            throw new IllegalArgumentException("There must exists a label for each observation.");
-
         majorityLabelOfEntireSet = getMajorityLabelValue(dataSet.getLabels());
         tree = learnTree(dataSet);
     }
 
+    /**
+     * @param labels class labels.
+     * @return the majority boolean value in a list of booleans. If no majority exists, then the majority
+     * of the entire class label set is returned.
+     */
+    private Boolean getMajorityLabelValue(List<Boolean> labels) {
+        int trueCount = 0;
+        int falseCount = 0;
+
+        for (Boolean labelIsTrue : labels) {
+            if (labelIsTrue)
+                trueCount += 1;
+            else
+                falseCount += 1;
+        }
+        if (trueCount == falseCount)
+            return majorityLabelOfEntireSet;
+
+        return trueCount > falseCount;
+    }
+
+    /**
+     * A recursive function that learns the decision tree for the given data set.
+     *
+     * @param set data set.
+     * @return the learned decision tree.
+     */
     private Tree learnTree(DataSet set) {
         Tree tree = new Tree(set);
 
@@ -25,16 +86,24 @@ class ID3 {
         tree.setAttributeName(set.getAttributeNames().get(indexOfSplit));
         tree.setAttributeIndex(indexOfSplit);
         Tuple<DataSet, DataSet> tuple = split(set, indexOfSplit);
+
         tree.setLeft(learnTree(tuple.getLeft()));
         tree.setRight(learnTree(tuple.getRight()));
         return tree;
     }
 
+    /**
+     * Determines the index of which attribute that will be used to split the data set.
+     *
+     * @param observations observations (aka examples)
+     * @param labels       labeled classes
+     * @return the index of which attribute will be used to split.
+     */
     static int determineIndexOfSplit(List<List<Boolean>> observations, List<Boolean> labels) {
         double[] infoGains = calcInfoGain(observations, labels);
         int splitIndex = 0;
-
         double previous = 0;
+
         for (int i = 0; i < infoGains.length; ++i) {
             if (infoGains[i] > previous) {
                 splitIndex = i;
@@ -44,6 +113,13 @@ class ID3 {
         return splitIndex;
     }
 
+    /**
+     * Creates an array of information gains where each index corresponds to the index of the attributes.
+     *
+     * @param observations observations (aka examples)
+     * @param labels       class labels.
+     * @return information gains array.
+     */
     static double[] calcInfoGain(List<List<Boolean>> observations, List<Boolean> labels) {
         double[] conditionalEntropies = calcConditionalEntropies(observations, labels);
         double setEntropy = calcEntropy(observations, labels);
@@ -110,6 +186,10 @@ class ID3 {
         return -A - B;
     }
 
+    /**
+     * @param d input value assumed to not be zero.
+     * @return log base 2 of the input
+     */
     private static double log2(double d) {
         return Math.log(d) / Math.log(2);
     }
@@ -146,22 +226,13 @@ class ID3 {
         return tree;
     }
 
-    private Boolean getMajorityLabelValue(List<Boolean> labels) {
-        int trueCount = 0;
-        int falseCount = 0;
-
-        for (Boolean labelIsTrue : labels) {
-            if (labelIsTrue)
-                trueCount += 1;
-            else
-                falseCount += 1;
-        }
-        if (trueCount == falseCount)
-            return majorityLabelOfEntireSet;
-
-        return trueCount > falseCount;
-    }
-
+    /**
+     * Determines the accuracy percent of a decision tree against a given data set.
+     *
+     * @param t       tree
+     * @param testSet data set
+     * @return accuracy percent of a decision tree against a data set.
+     */
     private static double getAccuracyPercent(Tree t, DataSet testSet) {
         int hitCount = 0;
         int labelIndex = 0;
@@ -216,12 +287,20 @@ class ID3 {
         return trainAccResult + testAccResult;
     }
 
+    /**
+     * A binary Tree which is either a leaf node or an inner node which contains left and right sub tree.
+     */
     class Tree {
         private final boolean isLeafNode;
+        // Tree only has a predicated value if it is a leaf node.
         private final Boolean predicatedValue;
+        // Tree only has left or right nodes if it is inner node.
         private Tree left;
         private Tree right;
+        // Tree only an attribute name if it is an inner node.
         private String attributeName;
+        // Tree only an attribute index if it is an inner node.
+        //
         private int attributeIndex;
 
         Tree(DataSet set) {
@@ -230,30 +309,44 @@ class ID3 {
             predicatedValue = t.getRight();
         }
 
+        /**
+         * Determines the base case for the learn tree recursive calls.
+         *
+         * @param set data set.
+         * @return left value is if this tree is a leaf and right value is the predicated value
+         */
         private Tuple<Boolean, Boolean> determineIsLeaf(DataSet set) {
             final List<List<Boolean>> obs = set.getObservations();
             final List<Boolean> labels = set.getLabels();
 
             Boolean isPredicated = null;
             final boolean isLeaf;
-
             final boolean initialValue = labels.get(0);
-            final List<Boolean> initialObs = obs.get(0);
+            // "pure" means all class labels are the same value.
             final boolean isPure = !labels.stream().anyMatch(b -> b != initialValue);
 
             if (isPure) {
                 isPredicated = initialValue;
                 isLeaf = true;
-            } else if (initialObs.isEmpty()) {
-                isLeaf = true;
-                isPredicated = getMajorityLabelValue(labels);
-            } else if (!obs.stream().anyMatch(o -> !listsAreEqual(initialObs, o))) {
+            } else if (isUnsplittable(obs)) {
                 isLeaf = true;
                 isPredicated = getMajorityLabelValue(labels);
             } else {
                 isLeaf = false;
             }
             return new Tuple<>(isLeaf, isPredicated);
+        }
+
+        /**
+         * A data set is unsplittable if there are no observations or the elements of each observation are identical.
+         * In reality if all observations are identical, it is splittable, but it would be  pointless to do so.
+         *
+         * @param obs observations
+         * @return whether the data set can split based on the observations.
+         */
+        private boolean isUnsplittable(List<List<Boolean>> obs) {
+            final List<Boolean> initialObs = obs.get(0);
+            return initialObs.isEmpty() || !obs.stream().anyMatch(o -> !listsAreEqual(initialObs, o));
         }
 
         private boolean listsAreEqual(List<Boolean> listA, List<Boolean> listB) {
@@ -313,6 +406,13 @@ class ID3 {
             return createDiagram(this, "");
         }
 
+        /**
+         * recursively builds a tree diagram.
+         *
+         * @param t       the decision tree.
+         * @param padding padding from the left that builds up through recursive method calls.
+         * @return a decision tree diagram.
+         */
         private String createDiagram(Tree t, final String padding) {
             String result;
             if (t.isLeafNode()) {
@@ -335,12 +435,6 @@ class ID3 {
 
     private static class TreeException extends RuntimeException {
         TreeException(String msg) {
-            super(msg);
-        }
-    }
-
-    static class EmptyFileException extends IOException {
-        EmptyFileException(String msg) {
             super(msg);
         }
     }

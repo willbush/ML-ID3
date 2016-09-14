@@ -23,7 +23,7 @@ Note that the first parameter is the training data set and the second is the tes
 
 ### Windows
 
-After installing the JDK 8, locate and get the path for the java compiler `javac.exe`. If you installed jdk-8u101-windows-x64.exe from Oracles website, the the path is likely `C:\Program Files\Java\jdk1.8.0_101\bin
+After installing the JDK 8, locate and get the path for the java compiler `javac.exe`. If you installed `jdk-8u101-windows-x64.exe` from Oracles website, the the path is likely `C:\Program Files\Java\jdk1.8.0_101\bin
 `.
 
 Now, navigate to the ML-ID3 folder in Windows Explorer. To open a command prompt at this location go to File > open command prompt.
@@ -38,7 +38,7 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.101-b13, mixed mode)
 
 Add the path to the JDK bin so we can run the `javac.exe` compiler.
 ```shell
-C:\Users\Will>set path=%path%;C:\Program Files\Java\jdk1.8.0_101\bin
+C:\Users\Will\Documents\GitHub\ML-ID3>set path=%path%;C:\Program Files\Java\jdk1.8.0_101\bin
 ```
 
 Note that setting the path here does not presist. Once you close the command prommpt and open it again, the path variable will need to be set again.
