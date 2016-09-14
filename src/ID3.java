@@ -39,7 +39,6 @@ import java.util.*;
  * @see <a href="https://en.wikipedia.org/wiki/ID3_algorithm">ID3 on wikipedia</a>
  */
 //@formatter:on
-
 class ID3 {
     private final boolean majorityLabelOfEntireSet;
     private final Tree tree;
@@ -138,19 +137,20 @@ class ID3 {
         int[] classTrueCountOnFalseBranch = new int[attributeLen];
         int[] classFalseCountOnFalseBranch = new int[attributeLen];
 
-        int labelIndex = 0;
-        for (List<Boolean> attributeValues : observations) {
-            for (int i = 0; i < attributeLen; ++i) {
-                if (attributeValues.get(i) && labels.get(labelIndex))
-                    classTrueCountOnTrueBranch[i] += 1;
-                else if (attributeValues.get(i) && !labels.get(labelIndex))
-                    classFalseCountOnTrueBranch[i] += 1;
-                else if (!attributeValues.get(i) && labels.get(labelIndex))
-                    classTrueCountOnFalseBranch[i] += 1;
-                else if (!attributeValues.get(i) && !labels.get(labelIndex))
-                    classFalseCountOnFalseBranch[i] += 1;
+        for (int row = 0; row < observations.size(); ++row) {
+            for (int col = 0; col < attributeLen; ++col) {
+                final boolean isAttributeTrue = observations.get(row).get(col);
+                final boolean isLabelTrue = labels.get(row);
+
+                if (isAttributeTrue && isLabelTrue)
+                    classTrueCountOnTrueBranch[col] += 1;
+                else if (isAttributeTrue)
+                    classFalseCountOnTrueBranch[col] += 1;
+                else if (isLabelTrue)
+                    classTrueCountOnFalseBranch[col] += 1;
+                else
+                    classFalseCountOnFalseBranch[col] += 1;
             }
-            ++labelIndex;
         }
         double[] conditionalEntropies = new double[attributeLen];
 
@@ -216,9 +216,13 @@ class ID3 {
         return new Tuple<>(left, right);
     }
 
-    private static <T> List<T> removeElement(int index, List<T> observations) {
-        List<T> result = new ArrayList<>(observations);
-        result.remove(index);
+    private static <T> List<T> removeElement(int index, List<T> elements) {
+        List<T> result = new ArrayList<>(elements.size() - 1);
+
+        for (int i = 0; i < elements.size(); ++i)
+            if (i != index)
+                result.add(elements.get(i));
+
         return Collections.unmodifiableList(result);
     }
 
@@ -297,10 +301,8 @@ class ID3 {
         // Tree only has left or right nodes if it is inner node.
         private Tree left;
         private Tree right;
-        // Tree only an attribute name if it is an inner node.
+        // Tree only an attribute name or index if it is an inner node.
         private String attributeName;
-        // Tree only an attribute index if it is an inner node.
-        //
         private int attributeIndex;
 
         Tree(DataSet set) {
