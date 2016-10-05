@@ -1,11 +1,6 @@
 # ML-ID3 (machine learning - Iterative Dichotomiser 3)
 
 
-Development Platform
------------
-
-Project was developed using Java 8 (java-1.8.0-openjdk-amd64) in the IntelliJ IDEA Community IDE. The operating system used for development is Linux, specifically Xubuntu 16.04. However, for compiling it should not matter what platform I used or that I used the open JDK as long as you have JDK 8 on your platform.
-
 Compiling and Running
 ---------
 Insure you have the java development kit (JDK) 8 installed ([link](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)) installed for your operating system. 
