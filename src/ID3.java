@@ -1,39 +1,36 @@
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.util.*;
 
 //@formatter:off
-
 /**
  * Iterative Dichotomiser 3 (ID3) is a learning algorithm which builds decision trees. This implementation only handles
  * binary classification tasks and does not implement pruning.
- * <p>
+ *
  * How ID3 works is best explained with an example. Consider the boolean function: (A XOR B) AND C.
  * The un-parsed training data for its truth table would look like this:
- * <p>
- * A B C class
- * 0 0 0 0
- * 0 0 1 0
- * 0 1 0 0
- * 0 1 1 1
- * 1 0 0 0
- * 1 0 1 1
- * 1 1 0 0
- * 1 1 1 0
- * <p>
+ *
+ *   A B C class
+ *   0 0 0 0
+ *   0 0 1 0
+ *   0 1 0 0
+ *   0 1 1 1
+ *   1 0 0 0
+ *   1 0 1 1
+ *   1 1 0 0
+ *   1 1 1 0
+ *
  * Where A, B, C are inputs to the function and "class" is the class label, which is the output of the function.
  * The ID3 program is expected to print the following decision tree on the left. On the right is my attempt to draw
  * the decision tree where you go down a left branch on 0 (or false) and right branch for 1 (or true).
- * <p>
- * C = 0 :  0                         C
- * C = 1 :                           / \
- * | A = 0 :                        0  A
- * | | B = 0 :  0                     / \
- * | | B = 1 :  1                    B   B
- * | A = 1 :                        /\   /\
- * | | B = 0 :  1                  0 1  1 0
- * | | B = 1 :  0
- * <p>
+ *
+ *   C = 0 :  0                         C
+ *   C = 1 :                           / \
+ *   | A = 0 :                        0  A
+ *   | | B = 0 :  0                     / \
+ *   | | B = 1 :  1                    B   B
+ *   | A = 1 :                        /\   /\
+ *   | | B = 0 :  1                  0 1  1 0
+ *   | | B = 1 :  0
+ *
  * But why does the root start with C? The root starts with C because C gives the most information of the 3 variables
  * about whether the output will be true or false. If C is false, then we're done the output of the function is false.
  * The ID3 algorithm calculates information gain by calculating entropy, and splits based on the attribute with the
@@ -286,13 +283,11 @@ class ID3 {
     static String getAccuracyResults(Tree t, DataSet trainSet, DataSet testSet) {
         final double trainAcc = ID3.getAccuracyPercent(t, trainSet);
         final double testAcc = ID3.getAccuracyPercent(t, testSet);
-        final String trainFormat = "\nAccuracy on training set (%d instances):  %s%%\n";
-        final String testFormat = "\nAccuracy on test set (%s instances):  %s%%\n";
-        DecimalFormat df = new DecimalFormat(".#");
-        df.setRoundingMode(RoundingMode.HALF_EVEN);
+        final String trainFormat = "\nAccuracy on training set (%d instances):  %.1f%%\n";
+        final String testFormat = "\nAccuracy on test set (%s instances):  %.1f%%\n";
 
-        final String trainAccResult = String.format(trainFormat, trainSet.getLabels().size(), df.format(trainAcc));
-        final String testAccResult = String.format(testFormat, testSet.getLabels().size(), df.format(testAcc));
+        final String trainAccResult = String.format(trainFormat, trainSet.getLabels().size(), trainAcc);
+        final String testAccResult = String.format(testFormat, testSet.getLabels().size(), testAcc);
         return trainAccResult + testAccResult;
     }
 
