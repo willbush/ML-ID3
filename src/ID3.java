@@ -1,3 +1,5 @@
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.*;
 
 //@formatter:off
@@ -283,11 +285,14 @@ class ID3 {
     static String getAccuracyResults(Tree t, DataSet trainSet, DataSet testSet) {
         final double trainAcc = ID3.getAccuracyPercent(t, trainSet);
         final double testAcc = ID3.getAccuracyPercent(t, testSet);
-        final String trainFormat = "\nAccuracy on training set (%d instances):  %.1f%%\n";
-        final String testFormat = "\nAccuracy on test set (%s instances):  %.1f%%\n";
+        final String trainFormat = "\nAccuracy on training set (%d instances):  %s%%\n";
+        final String testFormat = "\nAccuracy on test set (%s instances):  %s%%\n";
 
-        final String trainAccResult = String.format(trainFormat, trainSet.getLabels().size(), trainAcc);
-        final String testAccResult = String.format(testFormat, testSet.getLabels().size(), testAcc);
+        DecimalFormat df = new DecimalFormat(".#");
+        df.setRoundingMode(RoundingMode.HALF_EVEN);
+
+        final String trainAccResult = String.format(trainFormat, trainSet.getLabels().size(), df.format(trainAcc));
+        final String testAccResult = String.format(testFormat, testSet.getLabels().size(), df.format(testAcc));
         return trainAccResult + testAccResult;
     }
 
